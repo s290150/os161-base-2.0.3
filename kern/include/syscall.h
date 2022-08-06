@@ -69,7 +69,7 @@ int sys_waitpid( int, userptr_t, int );
 
 /* I/O system calls */
 
-int sys_open( userptr_t, int, ...); //maybe I can delete the ... here and in unistd.h in user
+int sys_open( userptr_t, int, int, int*); //maybe I can delete the ... here and in unistd.h in user
 int sys_read( int, userptr_t, size_t );
 int sys_write( int, userptr_t, size_t );
 int sys_lseek( int, off_t, int );
