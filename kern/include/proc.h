@@ -37,10 +37,13 @@
  */
 
 #include <spinlock.h>
+//#include <fileTable.h> //Added but I'm not sure because vnode.h is not added
+					   //but is only added a struct below
 
 struct addrspace;
 struct thread;
 struct vnode;
+struct fileTable; //for the same discussion above
 
 /*
  * Process structure.
