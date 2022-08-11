@@ -39,6 +39,7 @@
 #include <array.h>
 #include <spinlock.h>
 #include <threadlist.h>
+#include <fileTable.h>
 
 struct cpu;
 
@@ -107,6 +108,7 @@ struct thread {
 	 */
 
 	/* add more here as needed */
+	struct fileTable *t_fileTable; //A test, maybe it's not necessary
 };
 
 /*
