@@ -1,0 +1,42 @@
+#include <syscall.h>
+#include <types.h>
+#include <vnode.h>
+#include <vfs.h>
+#include <proc.h>
+#include <copyinout.h>
+#include <kern/errno.h>
+#include <kern/fcntl.h>
+#include <fileTable.h>
+
+int sys_close( int fd ) {
+
+    struct openfile *of;
+    int ret;
+    struct fileTable *ft = curthread->t_fileTable;
+
+    if ( fd == 0 || fd > MAX_OF ) { //Control if the file descriptor fd is into a valid range
+        return EBADF; //Bad file descriptor
+    }
+
+    *of = ft->array_OF[fd]; //associate the openfile structure to the one pointed by
+                            //the file descriptor in the System File Table
+
+    if ( *of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
+        return EBADF;
+    }
+
+    if ( of->reference_count == 1 ) { //If this is the last opening of the file, we can 
+                                      //destroy the openfile structure by the System File Table
+        vfs_close(of->f_cwd);
+        //free also memory if we use kmalloc with kfree(file)
+    } else { //if it is not, we can only decrease the reference count, controlling the PANIC
+             //with KASSERT
+        KASSERT(of->reference_count > 1);
+        of->reference_count--;
+    }
+
+    curthread->t_fileTable->array_OF[fd] = NULL; //At the end, the structure is deleted by the array
+
+    return 0;
+
+}
