@@ -25,6 +25,10 @@ int sys_close( int fd ) {
         return EBADF;
     }
 
+    /*
+    * From this point
+    */
+
     if ( of->reference_count == 1 ) { //If this is the last opening of the file, we can 
                                       //destroy the openfile structure by the System File Table
         vfs_close(of->f_cwd);
@@ -34,6 +38,11 @@ int sys_close( int fd ) {
         KASSERT(of->reference_count > 1);
         of->reference_count--;
     }
+
+    /*
+    * To this point, we can create a function to destroy the openfile struct in system filetable
+    * and dereference the eventual "virtual" memory allocated.
+    */
 
     curthread->t_fileTable->array_OF[fd] = NULL; //At the end, the structure is deleted by the array
 
