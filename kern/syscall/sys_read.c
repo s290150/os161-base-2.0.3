@@ -21,6 +21,10 @@ int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
 
     int ret;
 
+    /*
+    * From this point
+    */
+
     if ( fd == 0 || fd > MAX_OF ) { //Control if the file descriptor fd is into a valid range
         return EBADF; //Bad file descriptor
     }
@@ -31,6 +35,11 @@ int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
     if ( *of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
         return EBADF;
     }
+
+    /* 
+    * To this, we can create a function for the validation of the file descriptor in the 
+    * filetable. Same in write and close.
+    */
 
     //Initialize a uio suitable for I/O from a kernel buffer.
 
