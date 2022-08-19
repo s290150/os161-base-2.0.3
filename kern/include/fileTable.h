@@ -61,7 +61,7 @@ struct openfile {
 
 struct fileTable {
 
-    struct openfile *array_OF[MAX_OF]; /*Array of *openfile items */
+    struct openfile *array_OF[MAX_OF]; /*Array of *openfile items. Maybe we have to add __OPEN_MAX */
 
     unsigned int number_OF; /*number of open files we have (max for the above array) */
 };
