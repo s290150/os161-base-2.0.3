@@ -71,7 +71,7 @@ int sys_waitpid( int, userptr_t, int );
 
 int sys_open( userptr_t, int, int, int* ); //maybe I can delete the ... here and in unistd.h in user
 int sys_read( int, userptr_t, size_t, int* );
-int sys_write( int, userptr_t, size_t );
+int sys_write( int, userptr_t, size_t, int* );
 int sys_lseek( int, off_t, int );
 int sys_close( int );
 int sys_dup2( int, int );

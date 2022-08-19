@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "cpu.h": "c",
-        "iovec.h": "c"
+        "iovec.h": "c",
+        "proc.h": "c"
     }
 }
