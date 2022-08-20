@@ -8,6 +8,7 @@
 #include <kern/fcntl.h>
 #include <fileTable.h>
 #include <kern/limits.h>    //contains limits for strings, etc.
+#include <file.h>
 
 int sys_open(userptr_t filename, int flags, int mode, int* retval)
 {
@@ -54,22 +55,5 @@ int sys_open(userptr_t filename, int flags, int mode, int* retval)
     }
 
     return 0;
-
-}
-
-int placeOpenFile(struct openfile *of, int *fd) {
-
-    struct fileTable *ft = curthread->t_fileTable; //I think that, in this way, I can refere to
-    //a System fileTable that is common to all the processes that are currently present on the
-    //disk and that contains the openfile structure of all the files opened
-
-    for( int i = 0; i < __OPEN_MAX; i++ ) {
-        if ( ft->array_OF[i] == NULL ) {
-            ft->array_OF[i] = of;
-            *fd = i;
-            return 0;
-        }
-    }
-    return EMFILE; //Too many open files
 
 }

@@ -10,36 +10,22 @@
 #include <kern/limits.h>    //contains limits for strings, etc.
 #include <uio.h>
 #include <kern/iovec.h>
+#include <file.h>
 
 int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
 
     struct openfile *of;
-    struct fileTable *ft = curthread->t_fileTable;
 
     struct iovec iov;
     struct uio myuio;
 
     int ret;
 
-    /*
-    * From this point
-    */
+    ret = findFD(fd, of);
 
-    if ( fd == 0 || fd > MAX_OF ) { //Control if the file descriptor fd is into a valid range
-        return EBADF; //Bad file descriptor
+    if ( ret ) {
+        return ret;
     }
-
-    *of = ft->array_OF[fd]; //associate the openfile structure to the one pointed by
-                            //the file descriptor in the System File Table
-
-    if ( *of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
-        return EBADF;
-    }
-
-    /* 
-    * To this, we can create a function for the validation of the file descriptor in the 
-    * filetable. Same in write and close.
-    */
 
     //Initialize a uio suitable for I/O from a kernel buffer.
 

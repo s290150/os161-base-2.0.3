@@ -7,46 +7,16 @@
 #include <kern/errno.h>
 #include <kern/fcntl.h>
 #include <fileTable.h>
+#include <kern/limits.h>    //contains limits for strings, etc.
+#include <uio.h>
+#include <kern/iovec.h>
+#include <file.h>
 
-int sys_close( int fd ) {
+int findFD ( int fd, struct openfile** of ) {
 
-    struct openfile *of;
-    int ret;#include <syscall.h>
-#include <types.h>
-#include <vnode.h>
-#include <vfs.h>
-#include <proc.h>
-#include <copyinout.h>
-#include <kern/errno.h>
-#include <kern/fcntl.h>
-#include <fileTable.h>
-#include <limits.h>
-
-int sys_close( int fd ) {
-
-    struct openfile *of;
-    int ret;
-
-    ret = findFD(fd, of);
-
-    if ( ret ) {
-        return ret;
-    }
-
-   ret = closeOpenFile(of);
-
-   if ( ret ) {
-        return ret;
-   }
-
-    curthread->t_fileTable->array_OF[fd] = NULL; //At the end, the structure is deleted by the array
-
-    return 0;
-
-}
     struct fileTable *ft = curthread->t_fileTable;
 
-    if ( fd == 0 || fd > MAX_OF ) { //Control if the file descriptor fd is into a valid range
+    if ( fd == 0 || fd > __OPEN_MAX ) { //Control if the file descriptor fd is into a valid range
         return EBADF; //Bad file descriptor
     }
 
@@ -57,9 +27,10 @@ int sys_close( int fd ) {
         return EBADF;
     }
 
-    /*
-    * From this point
-    */
+    return 0;
+}
+
+int closeOpenFile ( struct openfile *of ) {
 
     if ( of->reference_count == 1 ) { //If this is the last opening of the file, we can 
                                       //destroy the openfile structure by the System File Table
@@ -71,13 +42,23 @@ int sys_close( int fd ) {
         of->reference_count--;
     }
 
-    /*
-    * To this point, we can create a function to destroy the openfile struct in system filetable
-    * and dereference the eventual "virtual" memory allocated.
-    */
-
-    curthread->t_fileTable->array_OF[fd] = NULL; //At the end, the structure is deleted by the array
-
     return 0;
+
+}
+
+int placeOpenFile(struct openfile *of, int *fd) {
+
+    struct fileTable *ft = curthread->t_fileTable; //I think that, in this way, I can refere to
+    //a System fileTable that is common to all the processes that are currently present on the
+    //disk and that contains the openfile structure of all the files opened
+
+    for( int i = 0; i < __OPEN_MAX; i++ ) {
+        if ( ft->array_OF[i] == NULL ) {
+            ft->array_OF[i] = of;
+            *fd = i;
+            return 0;
+        }
+    }
+    return EMFILE; //Too many open files
 
 }

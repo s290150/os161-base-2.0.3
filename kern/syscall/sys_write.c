@@ -14,22 +14,16 @@
 int sys_write( int fd, userptr_t buf, size_t size, int *retval ) {
 
     struct openfile *of;
-    struct fileTable *ft = curthread->t_fileTable;
 
     struct iovec iov;
     struct uio myuio;
 
     int ret;
 
-    if ( fd == 0 || fd > MAX_OF ) { //Control if the file descriptor fd is into a valid range
-        return EBADF; //Bad file descriptor
-    }
+    ret = findFD(fd, of);
 
-    *of = ft->array_OF[fd]; //associate the openfile structure to the one pointed by
-                            //the file descriptor in the System File Table
-
-    if ( *of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
-        return EBADF;
+    if ( ret ) {
+        return ret;
     }
 
     //Initialize a uio suitable for I/O from a kernel buffer.
