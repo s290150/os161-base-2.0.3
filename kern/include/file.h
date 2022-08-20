@@ -37,11 +37,11 @@
 //#include <vnode.h> //Added but I'm not sure because vnode.h is not added
 					   //but is only added a struct below
 #include <types.h>
+#include <kern/limits.h>
+
 
 struct vnode; //for the same discussion above
-
-#define MAX_OF 10
-
+struct lock;
 /*
  * At the moment, the lock variable is not inserted because we need to understand if we
  * have to face with the problems related to the synchronization.
@@ -56,15 +56,19 @@ struct openfile {
     unsigned int offset;
 
     unsigned int reference_count;
+    struct lock *of_lock;   //By using a lock, multiple processes can use the openfile structure one at time, without conflicts.
 
 };
 
-struct fileTable {
-
-    struct openfile *array_OF[MAX_OF]; /*Array of *openfile items. Maybe we have to add __OPEN_MAX */
-
-    unsigned int number_OF; /*number of open files we have (max for the above array) */
+struct filetable_entry {
+    struct openfile *op_ptr;
+    struct lock *ft_lock; //Since the fileTable is contained in proc.c, it can be accessed by multiple threads, so a lock is used. Notice that each entry has a lock, so read and write can happen at the same time from two threads.
 };
+
+int filetable_init();
+
+
+
 
 
 #endif /* _FILETABLE_H_ */

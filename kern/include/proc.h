@@ -37,13 +37,11 @@
  */
 
 #include <spinlock.h>
-//#include <fileTable.h> //Added but I'm not sure because vnode.h is not added
-					   //but is only added a struct below
 
 struct addrspace;
 struct thread;
 struct vnode;
-struct fileTable; //for the same discussion above
+struct filetable_entry; //for the same discussion above
 
 /*
  * Process structure.
@@ -74,7 +72,8 @@ struct proc {
 	struct vnode *p_cwd;		/* current working directory */
 
 	/* add more material here as needed */
-	struct fileTable  *p_fileTable;	//added
+	struct filetable_entry  p_filetable[__OPEN_MAX];
+		//added
 };
 
 /* This is the process structure for the kernel and for kernel-only threads. */
