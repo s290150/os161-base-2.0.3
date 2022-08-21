@@ -56,14 +56,20 @@ struct openfile {
     unsigned int offset;
 
     unsigned int reference_count;
-    struct lock *of_lock;   //By using a lock, multiple processes can use the openfile structure one at time, without conflicts.
+    struct lock *lock;   //By using a lock, multiple processes can use the openfile structure one at time, without conflicts.
 
 };
 
-struct filetable_entry {
+struct ft_entry {
     struct openfile *op_ptr;
-    struct lock *ft_lock; //Since the fileTable is contained in proc.c, it can be accessed by multiple threads, so a lock is used. Notice that each entry has a lock, so read and write can happen at the same time from two threads.
+    struct lock *entry_lock; //Since the fileTable is contained in proc.c, it can be accessed by multiple threads, so a lock is used. Notice that each entry has a lock, so read and write can happen at the same time from two threads.
+
 };
+
+struct filetable {
+    struct ft_entry ft_entry [__OPEN_MAX];
+    struct lock ft_lock;    //this locks the entire filetable, in case other threads try to operate concurrently.
+}
 
 int filetable_init();
 

@@ -10,6 +10,79 @@
 #include <uio.h>
 #include <kern/iovec.h>
 #include <file.h>
+#include <current.h>
+
+filetable * filetable_init(){
+    /*   */
+    KASSERT(curproc->p_filetable == NULL);
+
+    curproc->p_filetable = kmalloc(sizeof(struct filetable)*__OPEN_MAX);
+	if (curproc->p_filetable == NULL) {
+		return ENOMEM;
+	}
+    for (fd = 0; fd < __OPEN_MAX; fd++) {
+		curproc->p_filetable->ft_entry[fd] = NULL;
+	}
+
+}
+
+int file_open(char *filename, int flags, int mode, int *retfd){
+    struct vnode *vn;
+	struct openfile *file;
+	int result;
+	
+	result = vfs_open(filename, flags, mode, &vn);
+	if (result) {
+		return result;
+	}
+
+	file = kmalloc(sizeof(struct openfile));
+	if (file == NULL) {
+		vfs_close(vn);
+		return ENOMEM;
+	}
+
+	/* initialize the file struct */
+	file->lock = lock_create("file lock");
+	if (file->lock == NULL) {
+		vfs_close(vn);
+		kfree(file);
+		return ENOMEM;
+	}
+	file->f_cwd = vn;
+	file->offset = 0;
+	file->mode = flags & O_ACCMODE;
+	file->reference_count = 1;
+
+    /* checks for invalid access modes */
+	KASSERT(file->of_accmode==O_RDONLY || file->of_accmode==O_WRONLY || file->of_accmode==O_RDWR);
+
+    /* place the file in the filetable, getting the file descriptor */
+	result = filetable_placefile(file, retfd);
+	if (result) {
+		lock_destroy(file->of_lock);
+		kfree(file);
+		vfs_close(vn);
+		return result;
+	}
+
+	return 0;
+}
+
+int placeOpenFile(struct openfile *of, int *fd) {
+
+    for( int i = 0; i < __OPEN_MAX; i++ ) {
+        if ( curproc->p_filetable[i]->of_ptr == NULL ) {
+            curproc->p_filetable[i]->of_ptr = of;
+            *fd = i;
+            return 0;
+        }
+    }
+    return EMFILE; //Too many open files
+
+}
+
+
 
 int findFD ( int fd, struct openfile** of ) {
 
@@ -42,22 +115,5 @@ int closeOpenFile ( struct openfile *of ) {
     }
 
     return 0;
-
-}
-
-int placeOpenFile(struct openfile *of, int *fd) {
-
-    struct fileTable *ft = curthread->t_fileTable; //I think that, in this way, I can refere to
-    //a System fileTable that is common to all the processes that are currently present on the
-    //disk and that contains the openfile structure of all the files opened
-
-    for( int i = 0; i < __OPEN_MAX; i++ ) {
-        if ( ft->array_OF[i] == NULL ) {
-            ft->array_OF[i] = of;
-            *fd = i;
-            return 0;
-        }
-    }
-    return EMFILE; //Too many open files
 
 }
