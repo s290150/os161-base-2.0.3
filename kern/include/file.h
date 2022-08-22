@@ -60,14 +60,8 @@ struct openfile {
 
 };
 
-struct ft_entry {
-    struct openfile *op_ptr;
-    struct lock *entry_lock; //Since the fileTable is contained in proc.c, it can be accessed by multiple threads, so a lock is used. Notice that each entry has a lock, so read and write can happen at the same time from two threads.
-
-};
-
 struct filetable {
-    struct ft_entry ft_entry [__OPEN_MAX];
+    struct openfile *op_ptr [__OPEN_MAX];
     struct lock ft_lock;    //this locks the entire filetable, in case other threads try to operate concurrently.
 }
 
