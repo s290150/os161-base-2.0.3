@@ -53,9 +53,10 @@ struct openfile {
 
     mode_t mode; /*Read, Write, Read-Write ecc...*/
 
-    unsigned int offset;
+    off_t offset;
 
     unsigned int reference_count;
+
     struct lock *lock;   //By using a lock, multiple processes can use the openfile structure one at time, without conflicts.
 
 };

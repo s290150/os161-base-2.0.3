@@ -30,9 +30,9 @@ int sys_open(userptr_t filename, int flags, int mode, int* retval)
     /*The copyinstr copies a NULL-terminated string, at most len bytes long, from USER SPACE ADDRESS to the KERNEL SPACE ADDRESS. The number of bytes actually copied, including the terminating
     NULL, is returned in *done(if done is NON-NULL). The copyinstr function return ENAMETOOLONG if the string is longer than len bytes.*/
 
-    KASSERT(access_mode != O_RDONLY && access_mode != O_WRONLY && access_mode != O_RDWR); //KSSERT calls for kpanic, so these conditions must be not equal instead, right?
+    /*KASSERT(access_mode == O_RDONLY && access_mode == O_WRONLY && access_mode == O_RDWR && access_mode == O_APPEND ); //KSSERT calls for kpanic, so these conditions must be not equal instead, right?
                                                                                             //KASSERT is a macro which tests for conditions which should never occurr in a correct implementation
-    /*ret = vfs_open(path, flags, mode, &vn);
+    ret = vfs_open(path, flags, mode, &vn);
     if ( ret ) {
         return ret;
     }*/

@@ -52,6 +52,7 @@ filetable * filetable_init(){
 int file_open(char *filename, int flags, int mode, int *retfd){
     struct vnode *vn;
 	struct openfile *file;
+	struct stat info;
 	int result;
 	
 	result = vfs_open(filename, flags, mode, &vn);
@@ -72,18 +73,33 @@ int file_open(char *filename, int flags, int mode, int *retfd){
 		kfree(file);
 		return ENOMEM;
 	}
+
+	/* checks for invalid access modes */
+	KASSERT(file->mode==O_RDONLY || file->mode==O_WRONLY || file->mode==O_RDWR || file->mode==O_APPEND);
+
+	//From the kassert to the line 96 there's the modification for the O_APPEND
+	//In the kassert I inserted the O_APPEND as a mode
+
+	result = VOP_STAT(vn, &info); //Thanks to it I can take the information on the size
+
+	if ( result ) {
+		return result;
+	}
+
+	if ( file->mode==O_APPEND ) {
+		file->offset = info.st_size;
+	} else {
+		file->offset = 0;
+	}
+
 	file->f_cwd = vn;
-	file->offset = 0;
 	file->mode = flags & O_ACCMODE;
 	file->reference_count = 1;
-
-    /* checks for invalid access modes */
-	KASSERT(file->mode==O_RDONLY || file->of_accmode==O_WRONLY || file->of_accmode==O_RDWR);
 
     /* place the file in the filetable, getting the file descriptor */
 	result = filetable_placefile(file, retfd);
 	if (result) {
-		lock_destroy(file->of_lock);
+		lock_destroy(file->lock);
 		kfree(file);
 		vfs_close(vn);
 		return result;
