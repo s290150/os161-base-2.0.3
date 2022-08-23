@@ -112,13 +112,13 @@ int filetable_placefile(struct openfile *of, int *fd) {
 
 int findFD ( int fd, struct openfile** of ) {
 
-    struct fileTable *ft = curthread->t_fileTable;
+    struct fileTable *ft = curproc->p_fileTable; //probably curproc
 
     if ( fd == 0 || fd > __OPEN_MAX ) { //Control if the file descriptor fd is into a valid range
         return EBADF; //Bad file descriptor
     }
 
-    *of = ft->array_OF[fd]; //associate the openfile structure to the one pointed by
+    *of = ft->op_ptr[fd]; //associate the openfile structure to the one pointed by
                             //the file descriptor in the System File Table
 
     if ( *of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure

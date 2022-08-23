@@ -65,7 +65,15 @@ struct filetable {
     struct lock ft_lock;    //this locks the entire filetable, in case other threads try to operate concurrently.
 }
 
-int filetable_init();
+filetable * filetable_init();
+
+int file_open(char *filename, int flags, int mode, int *retfd);
+
+int filetable_placefile(struct openfile *of, int *fd);
+
+int findFD ( int fd, struct openfile** of );
+
+int closeOpenFile ( struct openfile *of );
 
 
 
