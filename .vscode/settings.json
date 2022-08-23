@@ -3,6 +3,10 @@
         "cpu.h": "c",
         "iovec.h": "c",
         "proc.h": "c",
+<<<<<<< HEAD
         "thread.h": "c"
+=======
+        "array": "c"
+>>>>>>> 00cf50297077b1659bcc7a02911e53b3b97f4cee
     }
 }
