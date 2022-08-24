@@ -15,7 +15,7 @@
 int sys_getpid(pid_t *retval)
 {
 
-*retval = (*curthread).t_pid;
+*retval = curthread->t_pid    //(*curthread).t_pid;
 
 return 0;
 
