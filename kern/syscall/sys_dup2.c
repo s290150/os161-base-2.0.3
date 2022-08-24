@@ -39,8 +39,9 @@ int sys_dup2( int oldfd, int newfd ) {
         if ( ret ) {
             return ret;
         }
+        
+        ft->op_ptr[fd] = NULL; //At the end, the structure is deleted by the array
 
-        curproc->p_fileTable->op_ptr[fd] = NULL; //At the end, the structure is deleted by the array
 
     }
 

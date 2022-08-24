@@ -6,7 +6,7 @@
 #include <copyinout.h>
 #include <kern/errno.h>
 #include <kern/fcntl.h>
-#include <fileTable.h>
+#include <file.h>
 #include <kern/limits.h>    //contains limits for strings, etc.
 #include <uio.h>
 #include <kern/iovec.h>

@@ -6,7 +6,7 @@
 #include <copyinout.h>
 #include <kern/errno.h>
 #include <kern/fcntl.h>
-#include <fileTable.h>
+#include <file.h>
 #include <limits.h>
 
 int sys_close( int fd ) {
