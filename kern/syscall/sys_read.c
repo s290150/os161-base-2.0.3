@@ -27,9 +27,11 @@ int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
         return ret;
     }
 
+    lock_acquire(of->lock);
+
     //Initialize a uio suitable for I/O from a kernel buffer.
 
-    uio_kinit(&iov, &myuio, buf, size, of->offset, UIO_READ); //Maybe here it is uio_uinit
+    uio_uinit(&iov, &myuio, buf, size, of->offset, UIO_READ); //Maybe here it is uio_uinit
                                                               //I don't remember why i put
                                                               //uio_kinit
 
@@ -38,6 +40,7 @@ int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
     ret = VOP_READ(of->f_cwd, &myuio);
 
     if ( ret ) {
+        lock_release(of->lock);
         return ret;
     }
 
@@ -48,6 +51,8 @@ int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
     //Here we can set retval to the amount read. In the uio struct there is a data that
     //take into account the residual amount of data to transfer. Thanks to it, we can obtain
     //the effective data read (and we can return it with retval).
+
+    lock_release(of->lock);
 
     *retval = size - myuio.uio_resid;
 
