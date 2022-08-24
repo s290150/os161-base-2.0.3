@@ -26,7 +26,7 @@ int sys_close( int fd ) {
         return ret;
    }
 
-    curthread->t_fileTable->array_OF[fd] = NULL; //At the end, the structure is deleted by the array
+    curproc->p_fileTable->op_ptr[fd] = NULL; //At the end, the structure is deleted by the array
 
     return 0;
 

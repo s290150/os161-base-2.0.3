@@ -29,7 +29,9 @@ int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
 
     //Initialize a uio suitable for I/O from a kernel buffer.
 
-    uio_kinit(&iov, &myuio, buf, size, of->offset, UIO_READ);
+    uio_kinit(&iov, &myuio, buf, size, of->offset, UIO_READ); //Maybe here it is uio_uinit
+                                                              //I don't remember why i put
+                                                              //uio_kinit
 
     //VOP_READ is used to perform the effective read from the io
 
