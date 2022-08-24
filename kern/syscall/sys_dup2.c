@@ -40,7 +40,7 @@ int sys_dup2( int oldfd, int newfd ) {
             return ret;
         }
 
-        curthread->t_fileTable->array_OF[fd] = NULL; //At the end, the structure is deleted by the array
+        ft->op_ptr[fd] = NULL; //At the end, the structure is deleted by the array
 
     }
 
