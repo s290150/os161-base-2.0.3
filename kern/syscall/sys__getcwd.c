@@ -18,7 +18,7 @@ int sys__getcwd( userptr_t buf, size_t len, int* retval ) {
     int ret;
 
     //Initialize a uio suitable for I/O from a kernel buffer.
-    uio_kinit( &iov, &myuio, buf, len, 0, UIO_READ );
+    uio_uinit( &iov, &myuio, buf, len, 0, UIO_READ );
 
     ret = vfs_getcwd( &myuio ); //It permits to get the current directory
 

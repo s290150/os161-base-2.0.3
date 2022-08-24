@@ -27,7 +27,7 @@ int sys_dup2( int oldfd, int newfd ) {
         return ret;
     }
 
-    //If the file descriptors are the same, the dup2 finish without errors
+    //If the file descriptors are the same, the dup2 finishes without errors
     if ( oldfd == newfd ) {
         return 0;
     }
@@ -40,7 +40,7 @@ int sys_dup2( int oldfd, int newfd ) {
             return ret;
         }
 
-        curthread->t_fileTable->array_OF[fd] = NULL; //At the end, the structure is deleted by the array
+        curproc->p_fileTable->op_ptr[fd] = NULL; //At the end, the structure is deleted by the array
 
     }
 
