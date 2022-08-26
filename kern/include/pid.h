@@ -18,6 +18,9 @@ struct pid {
 struct processtable {
     pid_t used_pid[__PID_MAX];
     struct lock *pt_lock; //for contemporary acces for the allocation of a new process' pid
+    int n_active_processes; //variable used to know how many processes are now active (we can't use
+                            //the __PID_MAX variable because maybe we reached it as pid's value of
+                            //a process but we have holes in the mean).
 };
 
 pid * pid_init();

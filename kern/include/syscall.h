@@ -61,9 +61,9 @@ int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 
 /* Process system calls */
 
-int sys_getpid( pid_t ); //I don't know very well what to define
+int sys_getpid( pid_t* ); //I don't know very well what to define
 void sys__exit( int );
-int sys_fork( pid_t ); //I don't know very well what to define
+int sys_fork( struct trapframe * , pid_t* ); //I don't know very well what to define
 int sys_execv( userptr_t, userptr_t );
 int sys_waitpid( pid_t, userptr_t, int, pid_t* );
 
