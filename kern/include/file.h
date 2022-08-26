@@ -63,8 +63,8 @@ struct openfile {
 
 struct filetable {
     struct openfile *op_ptr [__OPEN_MAX];
-    struct lock ft_lock;    //this locks the entire filetable, in case other threads try to operate concurrently.
-}
+    struct lock *ft_lock;    //this locks the entire filetable, in case other threads try to operate concurrently.
+};
 
 filetable * filetable_init();
 

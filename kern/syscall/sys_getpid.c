@@ -12,11 +12,11 @@
 #include <addrspace.h>
 #include <syscall.h>
 
-int sys_getpid(pid_t *retval)
+int sys_getpid( pid_t *retval )
 {
 
-*retval = curthread->t_pid    //(*curthread).t_pid;
+    *retval = curproc->p_pid->current_pid;
 
-return 0;
+    return 0;
 
 }
