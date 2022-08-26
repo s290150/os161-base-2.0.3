@@ -189,5 +189,16 @@ syscall(struct trapframe *tf)
 void
 enter_forked_process(struct trapframe *tf)
 {
-	(void)tf;
+	tf->tf_v0 = 0; //I indicate the call to the fork sys_call (its integer code, defined in
+				   //kern/include/kern/syscall.h, is '0').
+	tf->tf_a3 = 0; //signal no error
+
+	/*
+	 * Now, advance the program counter, to avoid restarting
+	 * the syscall over and over again.
+	 */
+
+	tf->tf_epc += 4;
+
+	mips_usermode(&tf);
 }
