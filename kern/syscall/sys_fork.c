@@ -33,11 +33,16 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
         return ENOMEM;
     }
 
+    ret = pid_init(new_proc);
+
+    if ( ret ) {
+        return ret;
+    }
+
     new_proc->p_pid->parent_pid = curproc->p_pid->current_pid;
 
-    //Create the new pid
+    
 
-    new_pid = 
 
 
 }

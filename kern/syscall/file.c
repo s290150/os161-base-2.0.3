@@ -28,7 +28,7 @@ filetable * filetable_init(){
 		//ft destroyer
 		return ENOMEM;
 	}
-    for (fd = 0; fd < __OPEN_MAX; fd++) {
+    for (fd = 0; fd < __OPEN_MAX; fd++) { //fd qua non si dovrebbe linkare in qualche modo?
 		curproc->p_filetable->of_ptr[fd] = NULL;
 	}
 
