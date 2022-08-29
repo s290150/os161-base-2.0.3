@@ -88,6 +88,7 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
     ret = thread_fork( curthread->t_name, new_proc, &enter_forked_process, tf_new, NULL);
 
     if ( ret ) {
+        as_destroy(addr_new);
         kfree(tf_new);
         proc_destroy(new_proc);
         return ret;
@@ -100,6 +101,5 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
     // This is the return for the child
 
     return 0;
-
 
 }

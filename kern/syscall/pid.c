@@ -58,6 +58,6 @@ int get_newpid ( struct processtable *pt ) {
 
     lock_acquire(pt->pt_lock);
 
-
+    
 
 }
