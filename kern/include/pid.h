@@ -16,6 +16,7 @@ struct pid {
 };
 
 struct processtable {
+    struct proc *proc_ptr [__PROC_MAX];
     pid_t *used_pid[__PID_MAX]; //If in the i position there's a 1, the position is occupied; otherwise
                                //, if it's 0, the position is free.
     struct lock *pt_lock; //for contemporary acces for the allocation of a new process' pid
@@ -24,5 +25,10 @@ struct processtable {
                             //a process but we have holes in the mean).
 };
 
-pid * pid_init( struct pid *p ); //Here we can also put the initialization of the queue for the pid to re-use
-int get_newpid( struct processtable *pt );
+pid pid_init( struct pid *p ); //Here we can also put the initialization of the queue for the pid to re-use
+processtable *proctable_init();
+void processtable_placeproc(struct proc *p, pid_t pid)
+pid_t get_newpid();
+proc proc_search_pid( pid_t pid );
+void proc_wait( struct pid *p );
+void pid_destroy();

@@ -19,4 +19,14 @@ int sys_waitpid( pid_t pid, userptr_t status, int option, pid_t *retval ) {
     // we are waiting. So we need a processtable that take into account all the processes
     // (basically the same we did for filetable)
 
+    struct proc *p = proc_search_pid(pid);
+
+    if ( p == NULL ) {
+        return ENOMEM;
+    }
+
+    proc_wait(p);
+
+    return 0;
+
 }

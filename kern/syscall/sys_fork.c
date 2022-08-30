@@ -43,7 +43,7 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
 
     /* From here */
 
-    ret = pid_init(new_proc);
+    ret = pid_init(new_proc->p_pid);
 
     if ( ret ) {
         return ret;
@@ -92,7 +92,9 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
         kfree(tf_new);
         proc_destroy(new_proc);
         return ret;
-    }
+    } 
+
+    processtable_placeproc(newproc, new_proc->p_pid->current_pid);
 
     //This is the return for the parent
 
