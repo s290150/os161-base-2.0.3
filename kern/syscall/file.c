@@ -141,8 +141,8 @@ int filetable_placefile(struct openfile *of, int *fd) {
 	lock_acquire(curproc->p_filetable->ft_lock);	//it doesn't return nothing, so the error isn't checked.
 
     for( int i = 0; i < __OPEN_MAX; i++ ) {
-        if ( curproc->p_filetable[i]->op_ptr == NULL ) {
-            curproc->p_filetable[i]->op_ptr = of;
+        if ( curproc->p_filetable->op_ptr[i] == NULL ) {
+            curproc->p_filetable->op_ptr[i] = of;
             *fd = i;
 			lock_release(curproc->p_filetable->ft_lock);
             return 0;
