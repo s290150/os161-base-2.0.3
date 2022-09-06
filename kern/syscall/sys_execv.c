@@ -89,21 +89,85 @@ loadexec(char *progname)
 
 int sys_execv(userptr_t progname, userptr_t argv){
     char *path;
-    int result; 
+	int *argc;
+    int result;
+	size_t numBytes;
     
     result = copyinstr(progname, path, PATH_MAX, NULL);    //copy the progname from userspace
     if (result){
         return result;
     }
 
+	result = copyin_argv(argv, argc, numBytes);
+
+	if ( result ) {
+		return result;
+	}
+
+
+	result = loadexec(path);
+
+	if ( result ) {
+		return result;
+	}
+
+	result = copyout_argv();
+
+	if ( result ) {
+		return result;
+	}
+
     //copyin and copyout for managing argv
 
 	/* Warp to user mode. */
-	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
+	enter_new_process(argc /*argc*/, argv/*userspace addr of argv*/,
 			  NULL /*userspace addr of environment*/,
 			  stackptr, entrypoint);
 
 	/* enter_new_process does not return. */
 	panic("enter_new_process returned\n");
 	return EINVAL;
+}
+
+int copyin_argv( userptr_t argv, unsigned int *argc, size_t *numBytes ) {
+
+	int i = 0;
+	int j = 0;
+	char **commands;
+	int *pointers;
+	size_t actual;
+
+	argc = 0;
+	numBytes = 0;
+
+	while ( *(char **)(argv+i) != NULL ) {
+
+		commands[j] = kmalloc(100*sizeof(char));
+
+		result = copyin(argv+i, pointers, sizeof(int)); //argv+i point to the address of the argv vector plus i (that increment of 4 every iteration) to point every time to 4 bytes forward
+		
+		if (result) {
+			return EFAULT;
+		}
+
+		result = copyinstr((userptr_t)pointers, commands[j], 100*sizeof(char), &actual);
+
+		if ( result ) {
+			return EFAULT;
+		}
+
+		i = i+4;
+
+		j = j+1;
+
+		argc = argc + 1;
+
+		int len = strlen(command[j])+1;
+
+		numBytes = numBytes + len;
+
+	}
+
+	return 0;
+
 }
