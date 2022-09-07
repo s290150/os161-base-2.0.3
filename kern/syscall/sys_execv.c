@@ -16,13 +16,14 @@
 #include <file.h>
 #include <proc.h>
 
+/* In our implementation, the arguments are copied in the user stack without padding (It is really needed?) */
+
 int
-loadexec(char *progname)
+loadexec(char *progname, vaddr_t *entrypoint, vaddr_t *stackptr)
 {
 	struct addrspace *old_as, *new_as;
     
 	struct vnode *v;
-	vaddr_t entrypoint, stackptr;
 	int result;
     char *newname;
 
@@ -54,7 +55,7 @@ loadexec(char *progname)
 	as_activate();
 
 	/* Load the executable. */
-	result = load_elf(v, &entrypoint);
+	result = load_elf(v, entrypoint);
 	if (result) {
         vfs_close(v);
         proc_setas(old_as); 
@@ -68,7 +69,7 @@ loadexec(char *progname)
 	vfs_close(v);
 
 	/* Define the user stack in the address space */
-	result = as_define_stack(new_as, &stackptr);
+	result = as_define_stack(new_as, stackptr);
 	if (result) {
         proc_setas(old_as); 
 		as_activate();
@@ -88,39 +89,105 @@ loadexec(char *progname)
 }
 
 int sys_execv(userptr_t progname, userptr_t argv){
+
+	vaddr_t entrypoint, stackptr;
     char *path;
-	int *argc;
+	int argc;
     int result;
 	size_t numBytes;
+	int i = 0;
+	int j = 0;
+	char **commands;
+	int *pointers;
+	size_t actual;
+	char **uargv;
+	unsigned int curaddr;
     
     result = copyinstr(progname, path, PATH_MAX, NULL);    //copy the progname from userspace
     if (result){
         return result;
     }
 
-	result = copyin_argv(argv, argc, numBytes);
+	/* result = copyin_argv(argv, argc, numBytes);
+
+	if ( result ) {
+		return result;
+	} */
+
+	argc = 0;
+
+	while ( *(char **)(argv+i) != NULL ) {
+
+		commands[j] = kmalloc(100*sizeof(char));
+
+		result = copyin(argv+i, pointers, sizeof(int)); //argv+i point to the address of the argv vector plus i (that increment of 4 every iteration) to point every time to 4 bytes forward
+		
+		if (result) {
+			return EFAULT;
+		}
+
+		result = copyinstr((userptr_t)pointers, commands[j], 100*sizeof(char), &actual);
+
+		if ( result ) {
+			return EFAULT;
+		}
+
+		i = i+4;
+
+		j = j+1;
+
+		argc = argc + 1;
+
+	}
+
+	command[j+1] = NULL;
+
+
+	result = loadexec(path, &entrypoint, &stackptr);
 
 	if ( result ) {
 		return result;
 	}
 
-
-	result = loadexec(path);
-
-	if ( result ) {
-		return result;
-	}
-
-	result = copyout_argv();
+	/* result = copyout_argv();
 
 	if ( result ) {
 		return result;
+	} */
+
+	uargv = (char *) kmalloc(sizeof(char *) * (argc+1));
+
+	if ( uargv == NULL )
+	{
+		as_destroy(curthread->t_vmspace);
+		kfree_all(commands);
+		kfree(commands);
+		return ENOMEM;
 	}
 
-    //copyin and copyout for managing argv
+	curaddr = stackptr;
+
+	for (j=0; j<i; j++)
+	{
+		length = strlen(commands[j])+1;
+		curaddr -= length;
+		result = copyout(commands[j], curaddr, length);
+		if ( result ) {
+			return result;
+		}
+		uargv[j] = curaddr;
+	}
+
+	uargv[j] = NULL;
+	curaddr -= sizeof(char *) * (j+1);
+
+	result = copyout(uargv, curaddr, sizeof(char *) * (j+1));
+	if ( result ) {
+		return result;
+	}
 
 	/* Warp to user mode. */
-	enter_new_process(argc /*argc*/, argv/*userspace addr of argv*/,
+	enter_new_process(argc /*argc*/, (userptr_t)stackptr/*userspace addr of argv*/,
 			  NULL /*userspace addr of environment*/,
 			  stackptr, entrypoint);
 
@@ -129,7 +196,7 @@ int sys_execv(userptr_t progname, userptr_t argv){
 	return EINVAL;
 }
 
-int copyin_argv( userptr_t argv, unsigned int *argc, size_t *numBytes ) {
+/* int copyin_argv( userptr_t argv, unsigned int *argc, size_t *numBytes ) {
 
 	int i = 0;
 	int j = 0;
@@ -168,6 +235,40 @@ int copyin_argv( userptr_t argv, unsigned int *argc, size_t *numBytes ) {
 
 	}
 
+	command[j+1] = NULL;
+
 	return 0;
 
 }
+
+int copyout_argv(  ) {
+
+	newargv = (char *) kmalloc(sizeof(char *) * (i+1));
+	if (newargv==NULL)
+	{
+		as_destroy(curthread->t_vmspace);
+		kfree_all(savedargv);
+		kfree(savedargv);
+		return -ENOMEM;
+	}
+
+	cpaddr = stackptr;
+	for (j=0; j<i; j++)
+	{
+		length = strlen(savedargv[j])+1;
+		cpaddr -= length;
+		tail = 0;
+		if (cpaddr & 0x3)
+		{
+			tail = cpaddr & 0x3;
+			cpaddr -= tail;
+		}
+		copyout(savedargv[j], cpaddr, length);
+		//bzero(cpaddr+length, tail);
+		newargv[j] = cpaddr;
+	}
+	newargv[j] = NULL;
+	cpaddr -= sizeof(char *) * (j+1);
+	copyout(newargv, cpaddr, sizeof(char *) * (j+1));
+
+} */
