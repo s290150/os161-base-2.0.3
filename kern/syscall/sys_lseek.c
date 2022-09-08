@@ -16,9 +16,11 @@ int sys_lseek( int fd, off_t offset, int whence, int *retval ) {
     int ret;
 
     ret = findFD( fd, &of );
-
     if ( ret ) {
         return ret;
+    }
+    if ( of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
+        return EBADF;
     }
 
     lock_acquire(of->lock);

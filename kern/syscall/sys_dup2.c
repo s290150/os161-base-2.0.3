@@ -12,37 +12,32 @@
 int sys_dup2( int oldfd, int newfd ) {
 
     struct filetable *ft = curproc->p_filetable;
-    struct openfile *of;
+    struct openfile *of, *temp_of;
     int ret;
 
-    ret = findFD( oldfd, of );
-
+    ret = findFD( oldfd, &of );
     if ( ret ) {
         return ret;
     }
 
-    ret = findFD( newfd, of );
-
+    ret = findFD( newfd, &temp_of);
     if ( ret ) {
         return ret;
     }
-
+    
     //If the file descriptors are the same, the dup2 finishes without errors
     if ( oldfd == newfd ) {
         return 0;
     }
 
-    if ( ft->op_ptr[newfd] != NULL ) {
+    if ( temp_of != NULL ) {
 
-        ret = closeOpenFile(of);
-
+        ret = closeOpenFile(temp_of);
         if ( ret ) {
             return ret;
         }
         
         ft->op_ptr[fd] = NULL; //At the end, the structure is deleted by the array
-
-
     }
 
     //Increase the refcount

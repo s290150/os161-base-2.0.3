@@ -14,14 +14,12 @@ int sys_chdir( userptr_t pathname ) {
     char path[__PATH_MAX+1];
     int ret;
 
-    ret = copyinstr(filename, path, strlen(path), NULL);
-
+    ret = copyinstr(pathname, path, strlen(path), NULL);
     if ( ret ) {
         return ret;
     }
 
     ret = vfs_chdir( path );
-
     if ( ret ) {
         return ret;
     }

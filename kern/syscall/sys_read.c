@@ -21,10 +21,12 @@ int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
 
     int ret;
 
-    ret = findFD(fd, of);
-
+    ret = findFD(fd, &of);
     if ( ret ) {
         return ret;
+    }
+    if ( of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
+        return EBADF;
     }
 
     lock_acquire(of->lock);

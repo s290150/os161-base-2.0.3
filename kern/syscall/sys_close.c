@@ -14,10 +14,12 @@ int sys_close( int fd ) {
     struct openfile *of;
     int ret;
 
-    ret = findFD(fd, of);
-
+    ret = findFD(fd, &of);
     if ( ret ) {
         return ret;
+    }
+    if ( of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
+        return EBADF;
     }
 
    ret = closeOpenFile(of);

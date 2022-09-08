@@ -14,68 +14,47 @@
 #include <synch.h>
 
 filetable * filetable_init(){
+	struct filetable * ft;
+
     /*  Makes shure that the process isn't pointing to a filetable already */
-    KASSERT(curproc->p_filetable == NULL);	//not sure of keeping this
+    KASSERT(ft == NULL);	//not sure of keeping this
 
-    curproc->p_filetable = kmalloc(sizeof(struct filetable)*__OPEN_MAX);
-
-	//This function returns a filetable type, it cannot return integers such as errors
-
-	KASSERT(curporc->p_filetable != NULL );
-
-	/* if (curproc->p_filetable == NULL) {
-		return ENOMEM;
-	} */
+    ft = kmalloc(sizeof(struct filetable));
+	KASSERT(ft != NULL );	//This function returns a filetable type, it cannot return integers such as errors
 
 	/* filetable lock initialization and entries cleaning */
-	curproc->p_filetable->ft_lock = lock_create('ft_lock')
+	ft->ft_lock = lock_create('ft_lock');
 
-	KASSERT(curproc->p_filetable->ft_lock != NULL );
+	KASSERT(ft->ft_lock != NULL );
 
-	/*if (curproc->p_filetable->ft_lock == NULL) {
-		//ft destroyer
-		return ENOMEM;
-	}*/
-    for (int fd = 0; fd < __OPEN_MAX; fd++) { //fd qua non si dovrebbe linkare in qualche modo?
-		curproc->p_filetable->op_ptr[fd] = NULL;
+    for (int fd = 0; fd < __OPEN_MAX; fd++) {
+		ft->op_ptr[fd] = NULL;
 	}
 
 	/* STIN attached to con:, with fd = 0 */
 	result = file_open("con:", O_RDONLY, 0, NULL);
 
 	if ( result ) {
-		kfree(curproc->p_filetable);
+		kfree(ft);
 	}
-
 	KASSERT(result == 0);
-
-	/*if (result) {
-		return result;
-	}*/
 
 	/* STOUT and STDERR attached to con:, with fd = 1, 2, respectively*/
 	result = file_open("con:", O_WRONLY, 0, NULL);
 
 	if ( result ) {
-		kfree(curproc->p_filetable);
+		kfree(ft);
 	}
-
 	KASSERT(result == 0);
 
-	/*if (result) {
-		return result;
-	}*/
 	result = file_open("con:", O_WRONLY, 0, NULL);
 
 	if ( result ) {
-		kfree(curproc->p_filetable);
+		kfree(ft);
 	}
-
 	KASSERT(result == 0);
 
-	/*if (result) {
-		return result;
-	}*/
+	return ft;
 }
 
 int file_open(char *filename, int flags, int mode, int *retfd){
@@ -106,9 +85,6 @@ int file_open(char *filename, int flags, int mode, int *retfd){
 	/* checks for invalid access modes */
 	KASSERT(file->mode==O_RDONLY || file->mode==O_WRONLY || file->mode==O_RDWR || file->mode==O_APPEND);
 
-	//From the kassert to the line 96 there's the modification for the O_APPEND
-	//In the kassert I inserted the O_APPEND as a mode
-
 	result = VOP_STAT(vn, &info); //Thanks to it I can take the information on the size
 
 	if ( result ) {
@@ -116,13 +92,14 @@ int file_open(char *filename, int flags, int mode, int *retfd){
 	}
 
 	if ( file->mode==O_APPEND ) {
-		file->offset = info.st_size;
+		file->offset = info.st_size;	//check if +1 is required
+		file->mode = flags;
 	} else {
 		file->offset = 0;
+		file->mode = flags & O_ACCMODE;	//ACCMODE is a mask only for RDONLY, WRONLY and RDWR, so APPEND is not maintained
 	}
 
 	file->f_cwd = vn;
-	file->mode = flags & O_ACCMODE;
 	file->reference_count = 1;
 
     /* place the file in the filetable, getting the file descriptor */
@@ -155,7 +132,7 @@ int filetable_placefile(struct openfile *of, int *fd) {
 
 
 
-int findFD ( int fd, struct openfile** of ) {
+int findFD ( int fd, struct openfile **of ) {
 
     struct fileTable *ft = curproc->p_fileTable; //probably curproc
 
@@ -163,26 +140,26 @@ int findFD ( int fd, struct openfile** of ) {
         return EBADF; //Bad file descriptor
     }
 
-    *of = ft->op_ptr[fd]; //associate the openfile structure to the one pointed by
+	*of = ft->op_ptr[fd]; //associate the openfile structure to the one pointed by
                             //the file descriptor in the System File Table
-
-    if ( *of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
-        return EBADF;
-    }
 
     return 0;
 }
 
 int closeOpenFile ( struct openfile *of ) {
-
+	lock_acquire(of->lock);
     if ( of->reference_count == 1 ) { //If this is the last opening of the file, we can 
                                       //destroy the openfile structure by the System File Table
         vfs_close(of->f_cwd);
+		lock_release(of->lock);
+		lock_destroy(of->lock);
+		kfree(of);
         //free also memory if we use kmalloc with kfree(file)
     } else { //if it is not, we can only decrease the reference count, controlling the PANIC
              //with KASSERT
         KASSERT(of->reference_count > 1);
         of->reference_count--;
+		lock_release(of->lock);
     }
 
     return 0;
