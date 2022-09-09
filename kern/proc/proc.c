@@ -54,6 +54,7 @@
  * The process for the kernel; this holds all the kernel-only threads.
  */
 struct proc *kproc;
+struct processtable *pt;
 
 /*
  * Create a proc structure.
@@ -63,7 +64,10 @@ struct proc *
 proc_create(const char *name)
 {
 	struct proc *proc;
+	bool is_kproc;
 
+	is_kproc = (strcmp(name, "[kernel]") == 0);
+	
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
 		return NULL;
@@ -72,6 +76,19 @@ proc_create(const char *name)
 	if (proc->p_name == NULL) {
 		kfree(proc);
 		return NULL;
+	}
+
+	if (is_kproc) {
+		proc->p_pidinfo->current_pid = 1;
+		proc->p_pidinfo->parent_pid = 0;
+	} else {
+		result = pid_init(proc->p_pidinfo);
+		/*if (result) {
+			sem_destroy(proc->exit_sem);
+			kfree(proc->p_name);
+			kfree(proc);
+			return NULL;
+		}*/
 	}
 
 	proc->p_numthreads = 0;
@@ -182,10 +199,15 @@ proc_destroy(struct proc *proc)
 void
 proc_bootstrap(void)
 {
+	pt = proctable_init();
 	kproc = proc_create("[kernel]");
 	if (kproc == NULL) {
 		panic("proc_create for kproc failed\n");
 	}
+
+	spinlock_acquire(pt->pt_lock);	//without & right?
+	pt->proc_ptr[kproc->p_pidinfo->current_pid] = kproc;
+	spinlock_release(pt->pt_lock);
 }
 
 /*

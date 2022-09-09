@@ -14,16 +14,14 @@ int pid_init ( struct pid *p ) {
 
     pid_t newpid = 0;
 
-    KASSERT( curproc->p_pid == NULL );
+    KASSERT( p == NULL );
 
     p = kmalloc(sizeof(struct pid));
-
     if ( p == NULL) {
         return ENOMEM;
     }
 
     p->p_lock = lock_create("pid_lock");
-
     if ( p->p_lock == NULL ) {
         return ENOMEM;
     }
@@ -48,19 +46,18 @@ int pid_init ( struct pid *p ) {
 }
 
 processtable * proctable_init() {
+    struct processtable *process_table;
 
-    curproc->p_processtable = kmalloc(sizeof(struct processtable)* __PROC_MAX);
+    process_table = kmalloc(sizeof(struct processtable));
+    KASSERT(process_table != NULL);
 
-    KASSERT(curproc->p_processtable != NULL);
-
-    curproc->p_processtable->pt_lock = lock_create("pt_lock");
-
-    KASSERT(curproc->p_processtable->pt_lock != NULL);
+    process_table->pt_lock = lock_create("pt_lock");
+    KASSERT(process_table->pt_lock != NULL);
 
     for ( int pid = 0; pid < __PROC_MAX; pid++ ) {
-        curproc->p_processtable->pid_ptr[pid] = NULL;
+        process_table->pid_ptr[pid] = NULL;
     }
-
+    return process_table;
 }
 
 void processtable_placeproc(struct proc *p, pid_t pid) {

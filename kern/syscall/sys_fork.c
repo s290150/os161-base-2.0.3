@@ -2,6 +2,7 @@
 #include <types.h>
 #include <kern/limits.h>
 #include <arch/mips/include/trapframe.h>
+#include <kern/syscall.h>
 #include <lib.h>
 #include <addrspace.h>
 #include <current.h>
@@ -43,11 +44,6 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
 
     /* From here */
 
-    ret = pid_init(new_proc->p_pid);
-
-    if ( ret ) {
-        return ret;
-    }
 
     new_proc->p_pid->parent_pid = curproc->p_pid->current_pid;
 
@@ -78,15 +74,13 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
 
     memcpy(new_proc->p_addrspace, addr_new, sizeof(struct addrspace));
 
-    // I copy the filetable
-
-    memcpy(new_proc->p_filetable, curproc->p_filetable, sizeof(struct filetable)); //
+    // I copy the filetable//
+    filetable_copy(new_proc->p_filetable);
 
     // Create a new thread and attach it to the new proc (copying the trapframe
     // of the old process to it).
 
     ret = thread_fork( curthread->t_name, new_proc, &enter_forked_process, tf_new, NULL);
-
     if ( ret ) {
         as_destroy(addr_new);
         kfree(tf_new);
@@ -94,7 +88,7 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
         return ret;
     } 
 
-    processtable_placeproc(newproc, new_proc->p_pid->current_pid);
+    processtable_placeproc(new_proc, new_proc->p_pid->current_pid);
 
     //This is the return for the parent
 
