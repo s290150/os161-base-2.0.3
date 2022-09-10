@@ -65,6 +65,7 @@ int sys_getpid( pid_t* ); //I don't know very well what to define
 void sys__exit( int );
 int sys_fork( struct trapframe * , pid_t* ); //I don't know very well what to define
 int sys_execv( userptr_t, userptr_t );
+int loadexec(char *progname, vaddr_t *entrypoint, vaddr_t *stackptr);
 int sys_waitpid( pid_t, userptr_t, int, pid_t* );
 
 /* I/O system calls */

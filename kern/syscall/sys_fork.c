@@ -18,16 +18,13 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
     struct trapframe *tf_new;
     struct addrspace *addr_new = NULL;
     struct proc *new_proc = NULL;
-    //struct thread *curt = curthread;
-    //struct proc *curp = curt->t_proc;
-    char pid_name[11];
     int ret;
 
     spinlock_acquire(curproc->p_lock);
 
     /* From here */
 
-    if ( curproc->p_processtable->n_active_processes >= __PID_MAX ) { //Too many active processes
+    if ( pt->n_active_processes >= __PID_MAX ) { //Too many active processes
         return ENPROC;
     }
 
@@ -45,7 +42,7 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
     /* From here */
 
 
-    new_proc->p_pid->parent_pid = curproc->p_pid->current_pid;
+    new_proc->p_pidinfo->parent_pid = curproc->p_pidinfo->current_pid;
 
     // To here, there is a control related to the creation of the new pid
     // and new associations.
@@ -80,7 +77,7 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
     // Create a new thread and attach it to the new proc (copying the trapframe
     // of the old process to it).
 
-    ret = thread_fork( curthread->t_name, new_proc, &enter_forked_process, tf_new, NULL);
+    ret = thread_fork( curthread->t_name, new_proc, enter_forked_process, tf_new, NULL); //function without & ?
     if ( ret ) {
         as_destroy(addr_new);
         kfree(tf_new);
@@ -88,11 +85,11 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
         return ret;
     } 
 
-    processtable_placeproc(new_proc, new_proc->p_pid->current_pid);
+    processtable_placeproc(new_proc, new_proc->p_pidinfo->current_pid);
 
     //This is the return for the parent
 
-    *retval = new_proc->p_pid->current_pid;
+    *retval = new_proc->p_pidinfo->current_pid;
 
     // This is the return for the child
 

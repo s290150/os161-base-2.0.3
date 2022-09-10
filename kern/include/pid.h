@@ -23,7 +23,8 @@ struct processtable {
 };
 
 extern struct processtable *pt;
-int pid_init( struct pid *p ); //Here we can also put the initialization of the queue for the pid to re-use
+
+int pid_init( struct pid *p, bool is_proc ); //Here we can also put the initialization of the queue for the pid to re-use
 processtable *proctable_init();
 void processtable_placeproc(struct proc *p, pid_t pid)
 pid_t get_newpid();

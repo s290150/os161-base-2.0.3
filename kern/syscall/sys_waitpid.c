@@ -12,6 +12,7 @@
 #include <thread.h>
 #include <trap.h>
 #include <synch.h>
+#include <copyinout.h>
 
 int sys_waitpid( pid_t pid, userptr_t status, int option, pid_t *retval ) {
 
@@ -20,12 +21,22 @@ int sys_waitpid( pid_t pid, userptr_t status, int option, pid_t *retval ) {
     // (basically the same we did for filetable)
 
     struct proc *p = proc_search_pid(pid);
+    int p_status;
 
     if ( p == NULL ) {
         return ENOMEM;
     }
 
+    p_status = p->p_pidinfo->exit_status;
+
     proc_wait(p);
+
+    result = copyout((const void *) &p_status, status, sizeof(int));
+    if (result) {
+        return result;
+    }
+
+    *retval = pid;
 
     return 0;
 

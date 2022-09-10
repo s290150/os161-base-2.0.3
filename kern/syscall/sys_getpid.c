@@ -15,7 +15,7 @@
 int sys_getpid( pid_t *retval )
 {
 
-    *retval = curproc->p_pid->current_pid;
+    *retval = curproc->p_pidinfo->current_pid;
 
     return 0;
 

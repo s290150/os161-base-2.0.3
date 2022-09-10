@@ -98,7 +98,7 @@ int sys_execv(userptr_t progname, userptr_t argv){
 	int i = 0;
 	int j = 0;
 	char **commands;
-	int *pointers;
+	int *pointer;
 	size_t actual;
 	char **uargv;
 	unsigned int curaddr;
@@ -108,25 +108,19 @@ int sys_execv(userptr_t progname, userptr_t argv){
         return result;
     }
 
-	/* result = copyin_argv(argv, argc, numBytes);
-
-	if ( result ) {
-		return result;
-	} */
-
 	argc = 0;
 
 	while ( *(char **)(argv+i) != NULL ) {
 
 		commands[j] = kmalloc(100*sizeof(char));
 
-		result = copyin(argv+i, pointers, sizeof(int)); //argv+i point to the address of the argv vector plus i (that increment of 4 every iteration) to point every time to 4 bytes forward
+		result = copyin(argv+i, pointer, sizeof(int)); //argv+i point to the address of the argv vector plus i (that increment of 4 every iteration) to point every time to 4 bytes forward
 		
 		if (result) {
 			return EFAULT;
 		}
 
-		result = copyinstr((userptr_t)pointers, commands[j], 100*sizeof(char), &actual);
+		result = copyinstr((userptr_t)pointer, commands[j], 100*sizeof(char), &actual);
 
 		if ( result ) {
 			return EFAULT;
@@ -148,12 +142,6 @@ int sys_execv(userptr_t progname, userptr_t argv){
 	if ( result ) {
 		return result;
 	}
-
-	/* result = copyout_argv();
-
-	if ( result ) {
-		return result;
-	} */
 
 	uargv = (char *) kmalloc(sizeof(char *) * (argc+1));
 
@@ -195,80 +183,3 @@ int sys_execv(userptr_t progname, userptr_t argv){
 	panic("enter_new_process returned\n");
 	return EINVAL;
 }
-
-/* int copyin_argv( userptr_t argv, unsigned int *argc, size_t *numBytes ) {
-
-	int i = 0;
-	int j = 0;
-	char **commands;
-	int *pointers;
-	size_t actual;
-
-	argc = 0;
-	numBytes = 0;
-
-	while ( *(char **)(argv+i) != NULL ) {
-
-		commands[j] = kmalloc(100*sizeof(char));
-
-		result = copyin(argv+i, pointers, sizeof(int)); //argv+i point to the address of the argv vector plus i (that increment of 4 every iteration) to point every time to 4 bytes forward
-		
-		if (result) {
-			return EFAULT;
-		}
-
-		result = copyinstr((userptr_t)pointers, commands[j], 100*sizeof(char), &actual);
-
-		if ( result ) {
-			return EFAULT;
-		}
-
-		i = i+4;
-
-		j = j+1;
-
-		argc = argc + 1;
-
-		int len = strlen(command[j])+1;
-
-		numBytes = numBytes + len;
-
-	}
-
-	command[j+1] = NULL;
-
-	return 0;
-
-}
-
-int copyout_argv(  ) {
-
-	newargv = (char *) kmalloc(sizeof(char *) * (i+1));
-	if (newargv==NULL)
-	{
-		as_destroy(curthread->t_vmspace);
-		kfree_all(savedargv);
-		kfree(savedargv);
-		return -ENOMEM;
-	}
-
-	cpaddr = stackptr;
-	for (j=0; j<i; j++)
-	{
-		length = strlen(savedargv[j])+1;
-		cpaddr -= length;
-		tail = 0;
-		if (cpaddr & 0x3)
-		{
-			tail = cpaddr & 0x3;
-			cpaddr -= tail;
-		}
-		copyout(savedargv[j], cpaddr, length);
-		//bzero(cpaddr+length, tail);
-		newargv[j] = cpaddr;
-	}
-	newargv[j] = NULL;
-	cpaddr -= sizeof(char *) * (j+1);
-	copyout(newargv, cpaddr, sizeof(char *) * (j+1));
-
-} */

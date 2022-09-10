@@ -78,18 +78,13 @@ proc_create(const char *name)
 		return NULL;
 	}
 
-	if (is_kproc) {
-		proc->p_pidinfo->current_pid = 1;
-		proc->p_pidinfo->parent_pid = 0;
-	} else {
-		result = pid_init(proc->p_pidinfo);
-		/*if (result) {
-			sem_destroy(proc->exit_sem);
-			kfree(proc->p_name);
-			kfree(proc);
-			return NULL;
-		}*/
+
+	result = pid_init(proc->p_pidinfo);
+	if ( result ) {
+		kfree(proc);
+		return NULL;
 	}
+
 
 	proc->p_numthreads = 0;
 	spinlock_init(&proc->p_lock);

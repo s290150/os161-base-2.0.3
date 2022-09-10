@@ -17,8 +17,8 @@ void sys__exit( int status ) {
 
     struct proc *p = curproc;
 
-    curproc->p_pid->exit_status = status;
-    curproc->p_pid->exit = true;
+    curproc->p_pidinfo->exit_status = status;
+    curproc->p_pidinfo->exit = true;
 
     proc_remthread(curthread); //Detach of the current thread from the process that calls the exit
 
@@ -27,6 +27,6 @@ void sys__exit( int status ) {
 
     V(p->p_sem); // This semaphore is put high to be used by the waitpid() system call
 
-    thread_exit()
+    thread_exit();
 
 }
