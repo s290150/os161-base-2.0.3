@@ -1,16 +1,16 @@
 #include <pid.h>
 #include <types.h>
 #include <kern/limits.h>
-#include <arch/mips/include/trapframe.h>
 #include <kern/syscall.h>
+#include <syscall.h>
 #include <lib.h>
 #include <addrspace.h>
 #include <current.h>
 #include <proc.h>
-#include <errno.h>
+#include <kern/errno.h>
 #include <file.h>
 #include <thread.h>
-#include <trap.h>
+#include <../arch/mips/include/trapframe.h>
 
 int sys_fork( struct trapframe *tf, pid_t* retval ) {
 
@@ -20,7 +20,7 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
     struct proc *new_proc = NULL;
     int ret;
 
-    spinlock_acquire(curproc->p_lock);
+    spinlock_acquire(&curproc->p_lock);
 
     /* From here */
 
@@ -61,7 +61,7 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
     // Create a new address space and copy the old one (parent process)
     // We didn't modify as_copy for VM because it's not our task
 
-    ret = as_copy(curproc->p_addrspace, addr_new);
+    ret = as_copy(curproc->p_addrspace, &addr_new);		//as_copy requires a double pointer for addr_new, it seems.
 
     if ( ret ) {
         kfree(tf_new);

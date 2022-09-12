@@ -12,18 +12,22 @@
 #include <file.h>
 #include <current.h>
 #include <synch.h>
+#include <stat.h>
 
-filetable * filetable_init(){
-	struct filetable * ft;
+struct filetable *filetable_init(void){
+	struct filetable *ft;
+	int result;
+	char buf[5];
 
+	strcpy(buf, "con:");
     /*  Makes shure that the process isn't pointing to a filetable already */
-    KASSERT(ft == NULL);	//not sure of keeping this
+    //KASSERT(ft == NULL);	//not sure of keeping this
 
     ft = kmalloc(sizeof(struct filetable));
 	KASSERT(ft != NULL );	//This function returns a filetable type, it cannot return integers such as errors
 
 	/* filetable lock initialization and entries cleaning */
-	ft->ft_lock = lock_create('ft_lock');
+	ft->ft_lock = lock_create("ft_lock");
 
 	KASSERT(ft->ft_lock != NULL );
 
@@ -32,7 +36,7 @@ filetable * filetable_init(){
 	}
 
 	/* STIN attached to con:, with fd = 0 */
-	result = file_open("con:", O_RDONLY, 0, NULL);
+	result = file_open(buf, O_RDONLY, 0, NULL);
 
 	if ( result ) {
 		kfree(ft);
@@ -40,14 +44,14 @@ filetable * filetable_init(){
 	KASSERT(result == 0);
 
 	/* STOUT and STDERR attached to con:, with fd = 1, 2, respectively*/
-	result = file_open("con:", O_WRONLY, 0, NULL);
+	result = file_open(buf, O_WRONLY, 0, NULL);
 
 	if ( result ) {
 		kfree(ft);
 	}
 	KASSERT(result == 0);
 
-	result = file_open("con:", O_WRONLY, 0, NULL);
+	result = file_open(buf, O_WRONLY, 0, NULL);
 
 	if ( result ) {
 		kfree(ft);
@@ -134,7 +138,7 @@ int filetable_placefile(struct openfile *of, int *fd) {
 
 int findFD ( int fd, struct openfile **of ) {
 
-    struct fileTable *ft = curproc->p_fileTable; //probably curproc
+    struct filetable *ft = curproc->p_filetable; //probably curproc
 
     if ( fd == 0 || fd > __OPEN_MAX ) { //Control if the file descriptor fd is into a valid range
         return EBADF; //Bad file descriptor

@@ -27,8 +27,8 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _FILETABLE_H_
-#define _FILETABLE_H_
+#ifndef _FILE_H_
+#define _FILE_H_
 
 /*
  * Definition of the opened files.
@@ -66,7 +66,7 @@ struct filetable {
     struct lock *ft_lock;    //this locks the entire filetable, in case other threads try to operate concurrently.
 };
 
-filetable * filetable_init();
+struct filetable *filetable_init(void);
 
 int file_open(char *filename, int flags, int mode, int *retfd);
 
@@ -81,4 +81,4 @@ void filetable_copy(struct filetable * new_ft);
 
 
 
-#endif /* _FILETABLE_H_ */
+#endif /* _FILE_H_ */

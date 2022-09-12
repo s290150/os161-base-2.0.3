@@ -8,14 +8,16 @@
 #include <kern/fcntl.h>
 #include <kern/limits.h>    //contains limits for strings, etc.
 #include <file.h>
+#include <current.h>
+#include <uio.h>
+#include <synch.h>
+#include <stat.h>
+#include <kern/seek.h>
 
 int sys_open(userptr_t filename, int flags, int mode, int* retval)
 {
     char path[__PATH_MAX+1]; //the path name has a max length given in kern/limits.h
     int ret;
-    int access_mode = flags & O_ACCMODE; //see kern/fcntl.h
-    struct vnode *vn;
-    struct openfile *of;
 
     ret = copyinstr(filename, path, strlen(path), NULL); //The last is referred to the actual lenght of the string, if we have it. If not, we can put NULL here
     if ( ret ) {
@@ -50,7 +52,7 @@ int sys_close( int fd ) {
         return ret;
    }
 
-    curproc->p_fileTable->op_ptr[fd] = NULL; //At the end, the structure is deleted by the array
+    curproc->p_filetable->op_ptr[fd] = NULL; //At the end, the structure is deleted by the array
 
     return 0;
 
@@ -128,7 +130,7 @@ int sys_dup2( int oldfd, int newfd ) {
             return ret;
         }
         
-        ft->op_ptr[fd] = NULL; //At the end, the structure is deleted by the array
+        ft->op_ptr[newfd] = NULL; //At the end, the structure is deleted by the array
     }
 
     //Increase the refcount

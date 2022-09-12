@@ -1,5 +1,6 @@
 #include <types.h>
 #include <kern/limits.h>
+#include <spinlock.h>
 
 struct pid {
 
@@ -16,8 +17,8 @@ struct processtable {
     struct proc *proc_ptr  [__PROC_MAX];
     pid_t *used_pid[__PID_MAX]; //If in the i position there's a 1, the position is occupied; otherwise
                                //, if it's 0, the position is free.
-    struct spinlock *pt_lock; //for contemporary acces for the allocation of a new process' pid
-    int *n_active_processes; //variable used to know how many processes are now active (we can't use
+    struct spinlock pt_lock; //for contemporary acces for the allocation of a new process' pid
+    int n_active_processes; //variable used to know how many processes are now active (we can't use
                             //the __PID_MAX variable because maybe we reached it as pid's value of
                             //a process but we have holes in the mean).
 };
@@ -25,9 +26,9 @@ struct processtable {
 extern struct processtable *pt;
 
 int pid_init( struct pid *p, bool is_proc ); //Here we can also put the initialization of the queue for the pid to re-use
-processtable *proctable_init();
-void processtable_placeproc(struct proc *p, pid_t pid)
-pid_t get_newpid();
-proc proc_search_pid( pid_t pid );
-void proc_wait( struct pid *p );
-void pid_destroy();
+struct processtable *proctable_init(void);
+void processtable_placeproc(struct proc *p, pid_t pid);
+pid_t get_newpid(void);
+struct proc *proc_search_pid( pid_t pid );
+void proc_wait( struct proc *process );
+void pid_destroy(struct pid *);
