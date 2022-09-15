@@ -11,10 +11,32 @@
 #include <file.h>
 #include <thread.h>
 #include <../arch/mips/include/trapframe.h>
+#include <vfs.h>
+#include <kern/fcntl.h>
+#include <copyinout.h>
+
+
+void
+help_enter_forked_process(void *tf, unsigned long junk){
+	/* struct trapframe mytf;
+	struct trapframe *ntf = tf; */
+
+	(void)junk;
+
+	/*
+	 * Now copy the trapframe to our stack, so we can free the one
+	 * that was malloced and use the one on our stack for going to
+	 * userspace.
+	 */
+
+	/* mytf = *ntf;
+	kfree(ntf); */
+
+	enter_forked_process((struct trapframe *)tf);
+}
 
 int sys_fork( struct trapframe *tf, pid_t* retval ) {
 
-    pid_t new_pid;
     struct trapframe *tf_new;
     struct addrspace *addr_new = NULL;
     struct proc *new_proc = NULL;
@@ -77,7 +99,7 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
     // Create a new thread and attach it to the new proc (copying the trapframe
     // of the old process to it).
 
-    ret = thread_fork( curthread->t_name, new_proc, enter_forked_process, tf_new, NULL); //function without & ?
+    ret = thread_fork( curthread->t_name, new_proc, help_enter_forked_process, (void *)tf_new, (unsigned long) 0); //function without & ?
     if ( ret ) {
         as_destroy(addr_new);
         kfree(tf_new);
@@ -182,7 +204,7 @@ int sys_execv(userptr_t progname, userptr_t argv){
 	char **uargv;
 	unsigned int curaddr;
     
-    result = copyinstr(progname, path, PATH_MAX, NULL);    //copy the progname from userspace
+    result = copyinstr(progname, path, __PATH_MAX, NULL);    //copy the progname from userspace
     if (result){
         return result;
     }
@@ -213,7 +235,7 @@ int sys_execv(userptr_t progname, userptr_t argv){
 
 	}
 
-	command[j+1] = NULL;
+	commands[j+1] = NULL;
 
 
 	result = loadexec(path, &entrypoint, &stackptr);

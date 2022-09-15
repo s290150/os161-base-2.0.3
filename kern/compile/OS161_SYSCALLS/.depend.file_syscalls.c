@@ -6,4 +6,10 @@ file_syscalls.o: ../../syscall/file_syscalls.c ../../include/syscall.h \
  ../../include/array.h ../../include/lib.h opt-noasserts.h \
  ../../include/proc.h ../../include/copyinout.h \
  ../../include/kern/errno.h ../../include/kern/fcntl.h \
- ../../include/kern/limits.h ../../include/file.h
+ ../../include/kern/limits.h ../../include/file.h ../../include/current.h \
+ includelinks/machine/current.h ../../include/thread.h \
+ ../../include/threadlist.h includelinks/machine/thread.h \
+ ../../include/setjmp.h includelinks/kern/machine/setjmp.h \
+ ../../include/uio.h ../../include/kern/iovec.h ../../include/synch.h \
+ ../../include/stat.h ../../include/kern/stat.h \
+ ../../include/kern/stattypes.h ../../include/kern/seek.h

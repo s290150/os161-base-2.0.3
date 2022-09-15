@@ -11,4 +11,5 @@ file.o: ../../syscall/file.c ../../include/syscall.h \
  includelinks/machine/current.h ../../include/thread.h \
  ../../include/threadlist.h includelinks/machine/thread.h \
  ../../include/setjmp.h includelinks/kern/machine/setjmp.h \
- ../../include/synch.h
+ ../../include/synch.h ../../include/stat.h ../../include/kern/stat.h \
+ ../../include/kern/stattypes.h

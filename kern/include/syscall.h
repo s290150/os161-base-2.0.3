@@ -46,6 +46,7 @@ void syscall(struct trapframe *tf);
  */
 
 /* Helper for fork(). You write this. */
+void help_enter_forked_process(void *tf, unsigned long junk);
 void enter_forked_process(struct trapframe *tf);
 
 /* Enter user mode. Does not return. */
