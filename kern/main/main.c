@@ -50,6 +50,9 @@
 #include <test.h>
 #include <version.h>
 #include "autoconf.h"  // for pseudoconfig
+#include <machine/vm.h>
+#include <addrspace.h>
+#include <mips/tlb.h>
 
 
 /*

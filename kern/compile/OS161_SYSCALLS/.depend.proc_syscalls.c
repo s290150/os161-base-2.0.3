@@ -11,4 +11,6 @@ proc_syscalls.o: ../../syscall/proc_syscalls.c ../../include/pid.h \
  includelinks/machine/thread.h ../../include/setjmp.h \
  includelinks/kern/machine/setjmp.h ../../include/proc.h \
  ../../include/kern/errno.h ../../include/file.h \
- ../../include/../arch/mips/include/trapframe.h
+ ../../include/../arch/mips/include/trapframe.h ../../include/vfs.h \
+ ../../include/kern/fcntl.h ../../include/copyinout.h \
+ ../../include/synch.h

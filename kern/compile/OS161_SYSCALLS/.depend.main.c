@@ -12,4 +12,5 @@ main.o: ../../main/main.c ../../include/types.h \
  includelinks/machine/current.h ../../include/synch.h ../../include/vm.h \
  includelinks/machine/vm.h ../../include/mainbus.h ../../include/vfs.h \
  ../../include/device.h ../../include/syscall.h ../../include/test.h \
- ../../include/version.h autoconf.h
+ ../../include/version.h autoconf.h ../../include/addrspace.h \
+ opt-dumbvm.h includelinks/mips/tlb.h

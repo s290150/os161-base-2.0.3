@@ -14,6 +14,7 @@
 #include <vfs.h>
 #include <kern/fcntl.h>
 #include <copyinout.h>
+#include <synch.h>
 
 
 void
@@ -192,17 +193,17 @@ loadexec(char *progname, vaddr_t *entrypoint, vaddr_t *stackptr)
 int sys_execv(userptr_t progname, userptr_t argv){
 
 	vaddr_t entrypoint, stackptr;
-    char *path;
+    char path[__PATH_MAX];
 	int argc;
     int result;
-	size_t numBytes;
 	int i = 0;
 	int j = 0;
-	char **commands;
-	int *pointer;
+	char **commands = NULL; //Initialization of this two variables (an error asked for it) is correct?
+	int *pointer = NULL;
 	size_t actual;
 	char **uargv;
 	unsigned int curaddr;
+	int length;
     
     result = copyinstr(progname, path, __PATH_MAX, NULL);    //copy the progname from userspace
     if (result){
@@ -244,12 +245,10 @@ int sys_execv(userptr_t progname, userptr_t argv){
 		return result;
 	}
 
-	uargv = (char *) kmalloc(sizeof(char *) * (argc+1));
+	uargv = (char **) kmalloc(sizeof(char *) * (argc+1));
 
 	if ( uargv == NULL )
 	{
-		as_destroy(curthread->t_vmspace);
-		kfree_all(commands);
 		kfree(commands);
 		return ENOMEM;
 	}
@@ -260,17 +259,21 @@ int sys_execv(userptr_t progname, userptr_t argv){
 	{
 		length = strlen(commands[j])+1;
 		curaddr -= length;
-		result = copyout(commands[j], curaddr, length);
+		result = copyout(commands[j], (userptr_t) curaddr, length);
 		if ( result ) {
 			return result;
 		}
-		uargv[j] = curaddr;
+		memcpy(uargv[j], &curaddr, sizeof(unsigned int));
+		//uargv[j] = curaddr; //This line gave me an error, so I tought to use memcpy to copy it
+							  //But the second argument (curaddr) needs to be a pointer so I
+							  //Wrote it with the &. I don't know exactly if it is the correct
+							  //reference.
 	}
 
 	uargv[j] = NULL;
 	curaddr -= sizeof(char *) * (j+1);
 
-	result = copyout(uargv, curaddr, sizeof(char *) * (j+1));
+	result = copyout(uargv, (userptr_t) curaddr, sizeof(char *) * (j+1));
 	if ( result ) {
 		return result;
 	}
@@ -320,10 +323,15 @@ int sys_waitpid( pid_t pid, userptr_t status, int option, pid_t *retval ) {
 
     struct proc *p = proc_search_pid(pid);
     int p_status;
+	int result;
 
     if ( p == NULL ) {
         return ENOMEM;
     }
+
+	if ( option != 0 ) {
+		return EINVAL;
+	}
 
     p_status = p->p_pidinfo->exit_status;
 

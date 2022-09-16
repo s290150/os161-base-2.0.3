@@ -80,7 +80,7 @@ syscall(struct trapframe *tf)
 {
 	int callno;
 	int32_t retval;
-	int err;
+	int err = 0; //Initialized to 0 because bmake requests it
 
 	KASSERT(curthread != NULL);
 	KASSERT(curthread->t_curspl == 0);
@@ -140,7 +140,27 @@ syscall(struct trapframe *tf)
 		break;
 
 		case SYS___getcwd:
-		err = sys_getcwd( (userptr_t)tf->tf_a0, tf->tf_a1, &retval );
+		err = sys__getcwd( (userptr_t)tf->tf_a0, tf->tf_a1, &retval );
+		break;
+
+		case SYS__exit:
+		sys__exit( tf->tf_a0 );
+		break;
+
+		case SYS_fork:
+		err = sys_fork( tf, &retval );
+		break;
+
+		case SYS_getpid:
+		err = sys_getpid( &retval );
+		break;
+
+		case SYS_waitpid:
+		err = sys_waitpid( tf->tf_a0, (userptr_t)tf->tf_a1, tf->tf_a2, &retval );
+		break;
+
+		case SYS_execv:
+		err = sys_execv( (userptr_t)tf->tf_a0, (userptr_t)tf->tf_a1 );
 		break;
 
 	    default:
@@ -200,5 +220,5 @@ enter_forked_process(struct trapframe *tf)
 
 	tf->tf_epc += 4;
 
-	mips_usermode(&tf);
+	mips_usermode(tf);
 }

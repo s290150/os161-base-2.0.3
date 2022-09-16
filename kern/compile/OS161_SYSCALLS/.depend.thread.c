@@ -11,4 +11,4 @@ thread.o: ../../thread/thread.c ../../include/types.h \
  ../../include/proc.h ../../include/current.h \
  includelinks/machine/current.h ../../include/synch.h \
  ../../include/addrspace.h ../../include/vm.h opt-dumbvm.h \
- ../../include/mainbus.h ../../include/vnode.h
+ ../../include/mainbus.h ../../include/vnode.h includelinks/mips/tlb.h
