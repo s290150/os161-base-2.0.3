@@ -36,7 +36,7 @@ struct filetable *filetable_init(void){
 	}
 
 	/* STIN attached to con:, with fd = 0 */
-	result = file_open(buf, O_RDONLY, 0, NULL);
+	result = file_open(buf, O_CREAT|O_RDONLY, 0, NULL);
 
 	if ( result ) {
 		kfree(ft);
@@ -44,14 +44,14 @@ struct filetable *filetable_init(void){
 	KASSERT(result == 0);
 
 	/* STOUT and STDERR attached to con:, with fd = 1, 2, respectively*/
-	result = file_open(buf, O_WRONLY, 0, NULL);
+	result = file_open(buf, O_CREAT|O_WRONLY, 0, NULL);
 
 	if ( result ) {
 		kfree(ft);
 	}
 	KASSERT(result == 0);
 
-	result = file_open(buf, O_WRONLY, 0, NULL);
+	result = file_open(buf, O_CREAT|O_WRONLY, 0, NULL);
 
 	if ( result ) {
 		kfree(ft);
