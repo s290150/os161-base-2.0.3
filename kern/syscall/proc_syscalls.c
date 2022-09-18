@@ -295,8 +295,6 @@ void sys__exit( int status ) {
     curproc->p_pidinfo->exit_status = status;
     curproc->p_pidinfo->exit = true;
 
-    proc_remthread(curthread); //Detach of the current thread from the process that calls the exit
-
     // All the files opened by this process need to be closed
     // But the ones shared with other processes not. What does it means exactly?
 
