@@ -66,7 +66,6 @@ proc_create(const char *name)
 {
 	struct proc *proc;
 	bool is_kproc;
-	int result;
 
 	is_kproc = (strcmp(name, "[kernel]") == 0);
 	
@@ -98,7 +97,7 @@ proc_create(const char *name)
 	proc->p_cwd = NULL;
 
 	/* file items field */
-	proc->p_filetable = NULL; //filetable_init();
+	proc->p_filetable = filetable_init(); //filetable_init();
 
 	return proc;
 }

@@ -16,16 +16,16 @@ struct pid *pid_init ( bool is_proc ) {
     struct pid *p;
     pid_t newpid = 0;
 
-    KASSERT( p == NULL );
+    //KASSERT( p == NULL );
 
     p = kmalloc(sizeof(struct pid));
-    KASSERT(p != NULL)
+    KASSERT(p != NULL);
 
     p->p_lock = lock_create("pid_lock");
     if (p->p_lock == NULL){
         kfree(p);
     }
-    KASSERT(p->p_lock != NULL)
+    KASSERT(p->p_lock != NULL);
 
 
     if ( is_proc ) {

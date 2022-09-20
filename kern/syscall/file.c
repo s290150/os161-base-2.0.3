@@ -40,12 +40,14 @@ struct filetable *filetable_init(void){
 
 void ft_STD_init(void){
 	int result;
-	char buf[] = {'c', 'o', 'n', ':', '\0'};
+	char buf1[] = {'c', 'o', 'n', ':', '\0'};
+	char buf2[] = {'c', 'o', 'n', ':', '\0'};
+	char buf3[] = {'c', 'o', 'n', ':', '\0'};
 	struct filetable *ft = curproc->p_filetable; 
 
 	/* STIN attached to con:, with fd = 0 */
 	//result = file_open(buf, O_CREAT|O_RDONLY, 0, NULL);
-	result = file_open(buf, O_RDONLY, 0, NULL);
+	result = file_open(buf1, O_RDONLY, 0, NULL);
 
 	if ( result ) {
 		kfree(ft);
@@ -54,7 +56,7 @@ void ft_STD_init(void){
 
 	/* STOUT and STDERR attached to con:, with fd = 1, 2, respectively*/
 	//result = file_open(buf, O_CREAT|O_WRONLY, 0, NULL);
-	result = file_open(buf, O_WRONLY, 0, NULL);
+	result = file_open(buf2, O_WRONLY, 0, NULL);
 
 	if ( result ) {
 		kfree(ft);
@@ -62,7 +64,7 @@ void ft_STD_init(void){
 	KASSERT(result == 0);
 
 	//result = file_open(buf, O_CREAT|O_WRONLY, 0, NULL);
-	result = file_open(buf, O_WRONLY, 0, NULL);
+	result = file_open(buf3, O_WRONLY, 0, NULL);
 
 	if ( result ) {
 		kfree(ft);
@@ -135,7 +137,8 @@ int filetable_placefile(struct openfile *of, int *fd) {
     for( int i = 0; i < __OPEN_MAX; i++ ) {
         if ( curproc->p_filetable->op_ptr[i] == NULL ) {
             curproc->p_filetable->op_ptr[i] = of;
-            *fd = i;
+			if(fd != NULL)
+            	*fd = i;
 			lock_release(curproc->p_filetable->ft_lock);
             return 0;
         }
