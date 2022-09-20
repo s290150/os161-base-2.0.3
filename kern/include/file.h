@@ -67,7 +67,7 @@ struct filetable {
 };
 
 struct filetable *filetable_init(void);
-
+void ft_STD_init(void);
 int file_open(char *filename, int flags, int mode, int *retfd);
 
 int filetable_placefile(struct openfile *of, int *fd);

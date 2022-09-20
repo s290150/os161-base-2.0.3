@@ -53,6 +53,7 @@
 #include <machine/vm.h>
 #include <addrspace.h>
 #include <mips/tlb.h>
+#include <file.h>
 
 
 /*
@@ -130,6 +131,7 @@ boot(void)
 	vm_bootstrap();
 	kprintf_bootstrap();
 	thread_start_cpus();
+	curproc->p_filetable = filetable_init();
 
 	/* Default bootfs - but ignore failure, in case emu0 doesn't exist */
 	vfs_setbootfs("emu0");

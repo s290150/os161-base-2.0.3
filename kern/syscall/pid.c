@@ -8,24 +8,25 @@
 #include <synch.h>
 #include <lib.h>
 
-int pid_init ( struct pid *p, bool is_proc ) {
+struct pid *pid_init ( bool is_proc ) {
 
     //I'm a little bit not sure on the use of curproc to refer to the new process created
     //Maybe I can pass it as an argument (the pid structure of the new proc)
 
+    struct pid *p;
     pid_t newpid = 0;
 
     KASSERT( p == NULL );
 
     p = kmalloc(sizeof(struct pid));
-    if ( p == NULL) {
-        return ENOMEM;
-    }
+    KASSERT(p != NULL)
 
     p->p_lock = lock_create("pid_lock");
-    if ( p->p_lock == NULL ) {
-        return ENOMEM;
+    if (p->p_lock == NULL){
+        kfree(p);
     }
+    KASSERT(p->p_lock != NULL)
+
 
     if ( is_proc ) {
         p->parent_pid = 0;
@@ -36,13 +37,10 @@ int pid_init ( struct pid *p, bool is_proc ) {
         p->current_pid = newpid;
     }
 
-
     p->exit_status = 0;
     p->exit = false;
 
-
-    return 0;
-
+    return p;
 }
 
 struct processtable * proctable_init(void) {
@@ -52,7 +50,7 @@ struct processtable * proctable_init(void) {
     KASSERT(process_table != NULL);
 
     spinlock_init(&process_table->pt_lock);// = lock_create("pt_lock");
-    KASSERT(&process_table->pt_lock != NULL);
+    //KASSERT(&process_table->pt_lock != NULL); with spinlock how can you verify if creation is successful?
 
     for ( int pid = 0; pid < __PROC_MAX; pid++ ) {
         process_table->proc_ptr[pid] = NULL;

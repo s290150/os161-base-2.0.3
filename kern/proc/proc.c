@@ -81,8 +81,8 @@ proc_create(const char *name)
 	}
 
 
-	result = pid_init(proc->p_pidinfo, is_kproc);
-	if ( result ) {
+	proc->p_pidinfo = pid_init(is_kproc);
+	if ( proc->p_pidinfo == NULL ) {
 		kfree(proc);
 		return NULL;
 	}
@@ -98,7 +98,7 @@ proc_create(const char *name)
 	proc->p_cwd = NULL;
 
 	/* file items field */
-	proc->p_filetable = filetable_init();
+	proc->p_filetable = NULL; //filetable_init();
 
 	return proc;
 }
