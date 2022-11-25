@@ -24,7 +24,7 @@ int sys_open(userptr_t filename, int flags, int mode, int* retval)
         return ret; //ENAMETOOLONG should be the return value from copyinstr
     }
 
-    ret = file_open(path, flags, mode, retval);
+    ret = file_open(path, flags, mode, retval, curproc->p_filetable);
     if ( ret ) {
         return ret;
     }
@@ -259,19 +259,14 @@ int sys_write( int fd, userptr_t buf, size_t size, int *retval ) {
     if ( ret ) {
         return ret;
     }
-
     if ( of == NULL ) { //If it is NULL, obviously we are not pointing any existent structure
         return EBADF;
     }
-
     lock_acquire(of->lock);
 
     //Initialize a uio suitable for I/O from a kernel buffer.
 
     uio_uinit(&iov, &myuio, buf, size, of->offset, UIO_WRITE);
-
-    //VOP_READ is used to perform the effective read from the io
-
     ret = VOP_WRITE(of->f_cwd, &myuio);
 
     if ( ret ) {
@@ -289,7 +284,7 @@ int sys_write( int fd, userptr_t buf, size_t size, int *retval ) {
     //take into account the residual amount of data to transfer. Thanks to it, we can obtain
     //the effective data read (and we can return it with retval).
 
-    *retval = size - myuio.uio_resid;
+    *retval = size - myuio.uio_resid;;
 
     return 0;
 

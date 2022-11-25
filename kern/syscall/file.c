@@ -35,19 +35,21 @@ struct filetable *filetable_init(void){
 		ft->op_ptr[fd] = NULL;
 	}
 
+	ft_STD_init(ft);
+
 	return ft;
 }
 
-void ft_STD_init(void){
+void ft_STD_init(struct filetable *ft){
 	int result;
 	char buf1[] = {'c', 'o', 'n', ':', '\0'};
 	char buf2[] = {'c', 'o', 'n', ':', '\0'};
 	char buf3[] = {'c', 'o', 'n', ':', '\0'};
-	struct filetable *ft = curproc->p_filetable; 
+	//struct filetable *ft = curproc->p_filetable; 
 
 	/* STIN attached to con:, with fd = 0 */
 	//result = file_open(buf, O_CREAT|O_RDONLY, 0, NULL);
-	result = file_open(buf1, O_RDONLY, 0, NULL);
+	result = file_open(buf1, O_RDONLY, 0, NULL, ft);
 
 	if ( result ) {
 		kfree(ft);
@@ -56,7 +58,7 @@ void ft_STD_init(void){
 
 	/* STOUT and STDERR attached to con:, with fd = 1, 2, respectively*/
 	//result = file_open(buf, O_CREAT|O_WRONLY, 0, NULL);
-	result = file_open(buf2, O_WRONLY, 0, NULL);
+	result = file_open(buf2, O_WRONLY, 0, NULL, ft);
 
 	if ( result ) {
 		kfree(ft);
@@ -64,7 +66,7 @@ void ft_STD_init(void){
 	KASSERT(result == 0);
 
 	//result = file_open(buf, O_CREAT|O_WRONLY, 0, NULL);
-	result = file_open(buf3, O_WRONLY, 0, NULL);
+	result = file_open(buf3, O_WRONLY, 0, NULL, ft);
 
 	if ( result ) {
 		kfree(ft);
@@ -72,13 +74,13 @@ void ft_STD_init(void){
 	KASSERT(result == 0);
 }
 
-int file_open(char *filename, int flags, int mode, int *retfd){
+int file_open(char *filename, int flags, int mode, int *retfd, struct filetable *ft){
     struct vnode *vn;
 	struct openfile *file;
 	struct stat info;
 	int result;
 
-	kprintf("Print filename: %s\n", filename);
+	//kprintf("Print filename: %s\n", filename);
 
 	result = vfs_open(filename, flags, mode, &vn);
 	if (result) {
@@ -120,7 +122,7 @@ int file_open(char *filename, int flags, int mode, int *retfd){
 	file->reference_count = 1;
 
     /* place the file in the filetable, getting the file descriptor */
-	result = filetable_placefile(file, retfd);
+	result = filetable_placefile(file, retfd, ft);
 	if (result) {
 		lock_destroy(file->lock);
 		kfree(file);
@@ -131,19 +133,19 @@ int file_open(char *filename, int flags, int mode, int *retfd){
 	return 0;
 }
 
-int filetable_placefile(struct openfile *of, int *fd) {
-	lock_acquire(curproc->p_filetable->ft_lock);	//it doesn't return nothing, so the error isn't checked.
+int filetable_placefile(struct openfile *of, int *fd, struct filetable *ft) {
+	lock_acquire(ft->ft_lock);	//it doesn't return nothing, so the error isn't checked.
 
     for( int i = 0; i < __OPEN_MAX; i++ ) {
-        if ( curproc->p_filetable->op_ptr[i] == NULL ) {
-            curproc->p_filetable->op_ptr[i] = of;
+        if ( ft->op_ptr[i] == NULL ) {
+            ft->op_ptr[i] = of;
 			if(fd != NULL)
             	*fd = i;
-			lock_release(curproc->p_filetable->ft_lock);
+			lock_release(ft->ft_lock);
             return 0;
         }
     }
-	lock_release(curproc->p_filetable->ft_lock);
+	lock_release(ft->ft_lock);
     return EMFILE; //Too many open files
 
 }
@@ -154,13 +156,16 @@ int findFD ( int fd, struct openfile **of ) {
 
     struct filetable *ft = curproc->p_filetable; //probably curproc
 
-    if ( fd == 0 || fd > __OPEN_MAX ) { //Control if the file descriptor fd is into a valid range
+    if ( fd < 0 || fd > __OPEN_MAX ) { //Control if the file descriptor fd is into a valid range
         return EBADF; //Bad file descriptor
     }
-
+	/* if (ft->op_ptr[fd] == NULL)
+		kprintf("No open file associated to %d", fd);
+		return EBADF; */
+		
 	*of = ft->op_ptr[fd]; //associate the openfile structure to the one pointed by
                             //the file descriptor in the System File Table
-
+	//kprintf("findFD %d %d\n", fd, (int)*of);
     return 0;
 }
 

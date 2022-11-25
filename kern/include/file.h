@@ -67,10 +67,10 @@ struct filetable {
 };
 
 struct filetable *filetable_init(void);
-void ft_STD_init(void);
-int file_open(char *filename, int flags, int mode, int *retfd);
+void ft_STD_init(struct filetable *ft);
+int file_open(char *filename, int flags, int mode, int *retfd, struct filetable *ft);
 
-int filetable_placefile(struct openfile *of, int *fd);
+int filetable_placefile(struct openfile *of, int *fd, struct filetable *ft);
 
 int findFD ( int fd, struct openfile** of );
 

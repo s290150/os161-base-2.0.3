@@ -97,7 +97,12 @@ proc_create(const char *name)
 	proc->p_cwd = NULL;
 
 	/* file items field */
-	proc->p_filetable = filetable_init(); //filetable_init();
+	if (!is_kproc){	//Each new process initializes its own ft
+		proc->p_filetable = filetable_init();
+		//ft_STD_init();
+	}
+
+
 
 	return proc;
 }

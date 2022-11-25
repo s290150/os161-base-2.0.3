@@ -131,7 +131,7 @@ boot(void)
 	vm_bootstrap();
 	kprintf_bootstrap();
 	thread_start_cpus();
-	ft_STD_init();
+	//ft_STD_init();	//kproc can't initialize the ft when it's booted
 
 
 	/* Default bootfs - but ignore failure, in case emu0 doesn't exist */

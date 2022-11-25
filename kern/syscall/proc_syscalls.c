@@ -290,7 +290,7 @@ int sys_execv(userptr_t progname, userptr_t argv){
 
 void sys__exit( int status ) {
 
-    struct proc *p = curproc;
+    //struct proc *p = curproc;
 
     curproc->p_pidinfo->exit_status = status;
     curproc->p_pidinfo->exit = true;
@@ -298,7 +298,7 @@ void sys__exit( int status ) {
     // All the files opened by this process need to be closed
     // But the ones shared with other processes not. What does it means exactly?
 
-    V(p->p_sem); // This semaphore is put high to be used by the waitpid() system call
+    //V(p->p_sem); // This semaphore is put high to be used by the waitpid() system call
 
     thread_exit();
 

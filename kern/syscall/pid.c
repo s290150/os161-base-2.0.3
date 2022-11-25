@@ -72,6 +72,7 @@ pid_t get_newpid (void) {
     for ( pid_t i = __PID_MIN; i < __PID_MAX; i++ ) {
             if ( pt->proc_ptr[i] == NULL ) {
                 pt->n_active_processes++;
+                spinlock_release(&pt->pt_lock);
                 return i;
             }
     }
