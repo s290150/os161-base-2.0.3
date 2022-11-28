@@ -44,6 +44,7 @@
 #include <vfs.h>
 #include <syscall.h>
 #include <test.h>
+#include <copyinout.h>
 
 /*
  * Load program "progname" and start running it in usermode.
@@ -52,12 +53,15 @@
  * Calls vfs_open on progname and thus may destroy it.
  */
 int
-runprogram(char *progname)
+runprogram(char *progname, unsigned long argc, char **args)
 {
 	struct addrspace *as;
 	struct vnode *v;
 	vaddr_t entrypoint, stackptr;
 	int result;
+	int len;
+	char **argvptr;
+	size_t stackoffset = 0;
 
 	/* Open the file. */
 	result = vfs_open(progname, O_RDONLY, 0, &v);
@@ -97,8 +101,38 @@ runprogram(char *progname)
 		return result;
 	}
 
+	argvptr  = (char **) kmalloc(sizeof(char **) * argc);
+	if(argvptr == NULL)	
+		return ENOMEM;
+	argvptr[argc] = NULL;
+	for(int i=0; i< (int) argc; i++){	
+			argvptr[i] =(char*)kmalloc(sizeof(char*));
+			if(argvptr[i] == NULL)	
+				return ENOMEM;
+
+			len = strlen(args[i])+1;
+			stackptr = stackptr - len;	//with the following copyoutstr the address increases toward the end of the stack
+			if(stackptr & 0x3)
+				stackptr -= (stackptr & 0x3); //padding
+			
+			result = copyoutstr(args[i], (userptr_t) stackptr, len,NULL);
+			if(result){
+				kfree(argvptr);
+				return result;
+			}	
+			argvptr[i] = (char *) stackptr;	
+		}
+		argvptr[argc] = 0;
+		stackoffset += sizeof(char *)*(argc+1);
+		stackptr = stackptr - stackoffset /*- ((stackptr-stackoffset)%8)*/;
+		result = copyout (argvptr, (userptr_t) stackptr, sizeof(char *)*(argc));
+		if(result){
+			kfree(argvptr);
+			return result;
+		}		
+
 	/* Warp to user mode. */
-	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
+	enter_new_process(argc /*argc*/, (userptr_t) stackptr/*userspace addr of argv*/,
 			  NULL /*userspace addr of environment*/,
 			  stackptr, entrypoint);
 

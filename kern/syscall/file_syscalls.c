@@ -16,14 +16,19 @@
 
 int sys_open(userptr_t filename, int flags, int mode, int* retval)
 {
-    char path[__PATH_MAX+1]; //the path name has a max length given in kern/limits.h
+    char path[__PATH_MAX]; //the path name has a max length given in kern/limits.h
+    //size_t * path_len;
     int ret;
 
-    ret = copyinstr(filename, path, strlen(path), NULL); //The last is referred to the actual lenght of the string, if we have it. If not, we can put NULL here
+    
+    //path_len = kmalloc(sizeof(int));
+    //modified below, path_len was null before
+    ret = copyinstr(filename, path, __PATH_MAX, NULL); //The last is referred to the actual lenght of the string, if we have it. If not, we can put NULL here
     if ( ret ) {
         return ret; //ENAMETOOLONG should be the return value from copyinstr
     }
-
+    
+    
     ret = file_open(path, flags, mode, retval, curproc->p_filetable);
     if ( ret ) {
         return ret;

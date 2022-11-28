@@ -102,7 +102,7 @@ int file_open(char *filename, int flags, int mode, int *retfd, struct filetable 
 	}
 
 	/* checks for invalid access modes */
-	KASSERT(flags==O_RDONLY || flags==O_WRONLY || flags==O_RDWR || flags==O_APPEND);
+	//KASSERT(flags==O_RDONLY || flags==O_WRONLY || flags==O_RDWR || flags==O_APPEND);
 
 	result = VOP_STAT(vn, &info); //Thanks to it I can take the information on the size
 
@@ -113,9 +113,11 @@ int file_open(char *filename, int flags, int mode, int *retfd, struct filetable 
 	if ( file->mode==O_APPEND ) {
 		file->offset = info.st_size;	//check if +1 is required
 		file->mode = flags;
+		//kprintf("Append\n");
 	} else {
 		file->offset = 0;
 		file->mode = flags & O_ACCMODE;	//ACCMODE is a mask only for RDONLY, WRONLY and RDWR, so APPEND is not maintained
+		//kprintf("Not append\n");
 	}
 
 	file->f_cwd = vn;
