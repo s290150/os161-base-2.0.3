@@ -151,11 +151,12 @@ int sys_dup2( int oldfd, int newfd ) {
 
 }
 
-int sys_lseek( int fd, off_t offset, int whence, int *retval ) {
+int sys_lseek( int fd, off_t offset, int whence, int *retval, int *retval1) {
 
     struct stat info;
     struct openfile *of;
     int ret;
+    off_t seek;
 
     ret = findFD( fd, &of );
     if ( ret ) {
@@ -169,12 +170,15 @@ int sys_lseek( int fd, off_t offset, int whence, int *retval ) {
 
     //Depending on the type of seek, we need to set the retval to change the offset
 
+    seek = of->offset; //default value
+
     switch( whence ) {
         case SEEK_SET: //Set the offset sent by the user
-            *retval = offset;
+            //kprintf("%d\n", (int)offset);
+            seek = offset;
             break;
         case SEEK_CUR: //Set the offset as the current position plus offset variable
-            *retval = of->offset + offset;
+            seek += offset;
             break;
         case SEEK_END: //Set the offset as the size of the file plus offset variable
             ret = VOP_STAT(of->f_cwd, &info); //In this way I populate the info structure with
@@ -184,7 +188,7 @@ int sys_lseek( int fd, off_t offset, int whence, int *retval ) {
                 return ret;
             }
 
-            *retval = info.st_size + offset;
+            seek = info.st_size + offset;
             break;
         default: //whence is not valid
             lock_release(of->lock);
@@ -193,9 +197,12 @@ int sys_lseek( int fd, off_t offset, int whence, int *retval ) {
 
     //We can also put the error for a resulting negative offset (or beyond the end of a seekable device)
 
-    of->offset = *retval;
-
+    of->offset = seek;
+    
     lock_release(of->lock);
+
+    *retval = seek >> 32;
+    *retval1 = seek & 0xFFFFFFFF;
 
     return 0;
 

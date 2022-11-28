@@ -39,6 +39,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <err.h>
+#include <stdio.h>
 
 #define BUFSIZE 1000
 
@@ -56,7 +57,7 @@ tail(int file, off_t where, const char *filename)
 	if (lseek(file, where, SEEK_SET)<0) {
 		err(1, "%s", filename);
 	}
-
+	//printf("%d\n", (int)where);
 	while ((len = read(file, buffer, sizeof(buffer))) > 0) {
 		write(STDOUT_FILENO, buffer, len);
 	}

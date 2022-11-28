@@ -35,6 +35,7 @@
 #include <thread.h>
 #include <current.h>
 #include <syscall.h>
+#include <copyinout.h>
 
 
 /*
@@ -81,6 +82,8 @@ syscall(struct trapframe *tf)
 	int callno;
 	int32_t retval;
 	int err = 0; //Initialized to 0 because bmake requests it
+	int32_t retval1; //needed for the sys_lseek
+	int whence = 0;
 
 	KASSERT(curthread != NULL);
 	KASSERT(curthread->t_curspl == 0);
@@ -98,6 +101,7 @@ syscall(struct trapframe *tf)
 	 */
 
 	retval = 0;
+	retval1 = 0;
 
 	switch (callno) {
 	    case SYS_reboot:
@@ -128,7 +132,10 @@ syscall(struct trapframe *tf)
 		break;
 
 		case SYS_lseek:
-		err = sys_lseek( tf->tf_a0, tf->tf_a1, tf->tf_a2, &retval );
+		copyin((const_userptr_t) tf->tf_sp + 16, &whence, sizeof(int));
+		off_t *seek = (off_t *) &tf->tf_a2;
+		err = sys_lseek((int)tf->tf_a0, *seek, whence, &retval, &retval1);
+		//err = sys_lseek( tf->tf_a0, tf->tf_a1, tf->tf_a2, &retval );
 		break;
 
 		case SYS_dup2:
@@ -182,6 +189,7 @@ syscall(struct trapframe *tf)
 	else {
 		/* Success. */
 		tf->tf_v0 = retval;
+		tf->tf_v1 = retval1;
 		tf->tf_a3 = 0;      /* signal no error */
 	}
 
