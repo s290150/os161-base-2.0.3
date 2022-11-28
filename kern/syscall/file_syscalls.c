@@ -107,7 +107,7 @@ int sys_chdir( userptr_t pathname ) {
 
 }
 
-int sys_dup2( int oldfd, int newfd ) {
+int sys_dup2( int oldfd, int newfd, int *outfd ) {
 
     struct filetable *ft = curproc->p_filetable;
     struct openfile *of, *temp_of;
@@ -147,6 +147,8 @@ int sys_dup2( int oldfd, int newfd ) {
                             //of the structure pointed by the old fd. So, the refcount need to be incremented
                             //because we have two file descriptors that are referring to the same file.
 
+    
+    *outfd = newfd;
     return 0;
 
 }
