@@ -114,6 +114,7 @@ void pid_destroy( struct pid *pid ) {
     spinlock_acquire(&pt->pt_lock);
     pt->n_active_processes--;
     pt->proc_ptr[pid->current_pid] = NULL;
+    lock_destroy(pid->p_lock);
     spinlock_release(&pt->pt_lock);
 }
 

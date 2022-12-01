@@ -102,7 +102,6 @@ void
 dowait(int nowait, int pid)
 {
 	int x;
-	int val;
 
 	if (pid<0) {
 		/* fork in question failed; just return */
@@ -117,11 +116,7 @@ dowait(int nowait, int pid)
 	}
 	
 	if (!nowait) {
-		
-		printf("%d\n", pid);
-		val = waitpid(pid, &x, 0);
-		printf("%d\n", val);
-		if (val<0) {
+		if (waitpid(pid, &x, 0)<0) {
 			warn("waitpid");
 		}
 		else if (WIFSIGNALED(x)) {

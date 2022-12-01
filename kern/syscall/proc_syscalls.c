@@ -205,7 +205,7 @@ int sys_execv(userptr_t progname, userptr_t argv){
     int result;
 	int i = 0;
 	int j = 0;
-	char **commands = NULL; //Initialization of this two variables (an error asked for it) is correct?
+	char **commands = kmalloc(100*sizeof(char));; //Initialization of this two variables (an error asked for it) is correct?
 	int *pointer = NULL;
 	size_t actual;
 	char **uargv;
@@ -221,7 +221,7 @@ int sys_execv(userptr_t progname, userptr_t argv){
 
 	while ( *(char **)(argv+i) != NULL ) {
 
-		commands[j] = kmalloc(100*sizeof(char));
+		//commands[j] = 
 
 		result = copyin(argv+i, pointer, sizeof(int)); //argv+i point to the address of the argv vector plus i (that increment of 4 every iteration) to point every time to 4 bytes forward
 		

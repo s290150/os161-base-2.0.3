@@ -198,6 +198,7 @@ void filetable_destroy(struct filetable * ft){
 		}
 	}
 	lock_release(ft->ft_lock);
+	lock_destroy(ft->ft_lock);
 }
 
 void filetable_copy(struct filetable * new_ft){
@@ -205,9 +206,9 @@ void filetable_copy(struct filetable * new_ft){
 	memcpy(new_ft, curproc->p_filetable, sizeof(struct filetable));
 	
 	//reference_count is used only in case of multiple threads under the same proc, since our filetable is contained in the process itself (so do the openfiles)
-	/* for(int fd=0; fd<__OPEN_MAX; fd++){
+	for(int fd=0; fd<__OPEN_MAX; fd++){
 		if(curproc->p_filetable->op_ptr[fd] != NULL)
-			curproc->p_filetable->op_ptr[fd]->reference_count++;
-	}	 */
+			new_ft->op_ptr[fd]->reference_count++;
+	}	
 	lock_release(curproc->p_filetable->ft_lock);
 }
