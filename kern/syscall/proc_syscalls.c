@@ -15,35 +15,32 @@
 #include <kern/fcntl.h>
 #include <copyinout.h>
 #include <synch.h>
-
+#include <vnode.h>
 
 void
-help_enter_forked_process(void *tf, unsigned long junk){
+enter_forked_process(void *data1, unsigned long data2){
 	/* struct trapframe mytf;
 	struct trapframe *ntf = tf; */
 
-	(void)junk;
+	(void)data2;
+	
+	void *tf = (void *) curthread->t_stack + 16;
 
-	/*
-	 * Now copy the trapframe to our stack, so we can free the one
-	 * that was malloced and use the one on our stack for going to
-	 * userspace.
-	 */
-
-	/* mytf = *ntf;
-	kfree(ntf); */
-
-	enter_forked_process((struct trapframe *)tf);
+	memcpy(tf, (const void *) data1, sizeof(struct trapframe));
+	kfree((struct trapframe *) data1);
+	
+	as_activate();
+	mips_usermode((struct trapframe *)tf);
 }
 
 int sys_fork( struct trapframe *tf, pid_t* retval ) {
 
     struct trapframe *tf_new;
-    struct addrspace *addr_new = NULL;
+    //struct addrspace *addr_new = NULL;
     struct proc *new_proc = NULL;
     int ret;
 
-    spinlock_acquire(&curproc->p_lock);
+    //spinlock_acquire(&curproc->p_lock);	//already done in proc_create_runprogram
 
     /* From here */
 
@@ -59,63 +56,70 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
 
     new_proc = proc_create_runprogram(curproc->p_name);
     if ( new_proc == NULL ) {
-        return ENOMEM;
+		return ENOMEM;
     }
 
-    /* From here */
+    /* Here there is a control related to the creation of the new pid
+    // and new associations. */
 
-
+	spinlock_acquire(&curproc->p_lock);
     new_proc->p_pidinfo->parent_pid = curproc->p_pidinfo->current_pid;
+	spinlock_release(&curproc->p_lock);
 
-    // To here, there is a control related to the creation of the new pid
-    // and new associations.
+	// Create a new address space and copy the old one (parent process)
+
+    ret = as_copy(curproc->p_addrspace, &new_proc->p_addrspace);
+    if ( ret ) {
+        proc_destroy(new_proc);
+        return ret;
+    }
+
+	spinlock_acquire(&curproc->p_lock);
+	if (curproc->p_cwd != NULL) {
+		VOP_INCREF(curproc->p_cwd);
+		new_proc->p_cwd = curproc->p_cwd;
+	}
+	spinlock_release(&curproc->p_lock);
 
     // We allocate a new trapframe and copy it into the new one
 
     tf_new = kmalloc(sizeof(struct trapframe));
-
     if ( tf_new == NULL ) {
+		as_destroy(new_proc->p_addrspace);
         proc_destroy(new_proc);
         return ENOMEM;
     }
 
-    memcpy(tf_new, tf, sizeof(*tf));
+    memcpy(tf_new, tf, sizeof(struct trapframe));
+	tf_new->tf_v0 = 0;	//retval?
+	tf_new->tf_v1 = 0;	//retval1?		   
+	tf_new->tf_a3 = 0;	//signal no error
+	tf_new->tf_epc += 4;	//advances the program counter to avoid restarting the syscall over and over again.
 
-    // Create a new address space and copy the old one (parent process)
-    // We didn't modify as_copy for VM because it's not our task
+    
 
-    ret = as_copy(curproc->p_addrspace, &addr_new);		//as_copy requires a double pointer for addr_new, it seems.
+    //memcpy(new_proc->p_addrspace, addr_new, sizeof(struct addrspace));	//as_copy at row 87 does the same job as this line maybe
 
-    if ( ret ) {
-        kfree(tf_new);
-        proc_destroy(new_proc);
-        return ret;
-    }
-
-    memcpy(new_proc->p_addrspace, addr_new, sizeof(struct addrspace));
-
-    // I copy the filetable//
+    // Here we copy filetable and update the process table//
     filetable_copy(new_proc->p_filetable);
-
-    // Create a new thread and attach it to the new proc (copying the trapframe
-    // of the old process to it).
-
-    ret = thread_fork( curthread->t_name, new_proc, help_enter_forked_process, (void *)tf_new, (unsigned long) 0); //function without & ?
-    if ( ret ) {
-        as_destroy(addr_new);
-        kfree(tf_new);
-        proc_destroy(new_proc);
-        return ret;
-    } 
-
     processtable_placeproc(new_proc, new_proc->p_pidinfo->current_pid);
 
     //This is the return for the parent
 
     *retval = new_proc->p_pidinfo->current_pid;
+	
+	// Create a new thread and attach it to the new proc (copying the trapframe
+    // of the old process to it).
+
+    ret = thread_fork( curthread->t_name, new_proc, enter_forked_process, (void *)tf_new, (unsigned long) 1);
+    if ( ret ) {
+		as_destroy(new_proc->p_addrspace);
+        kfree(tf_new);
+        proc_destroy(new_proc);
+        return ret;
+    } 
 
     // This is the return for the child
-
     return 0;
 
 }
@@ -291,14 +295,15 @@ int sys_execv(userptr_t progname, userptr_t argv){
 void sys__exit( int status ) {
 
     //struct proc *p = curproc;
-
     curproc->p_pidinfo->exit_status = status;
     curproc->p_pidinfo->exit = true;
+	//kprintf("\n-\n");
+
 
     // All the files opened by this process need to be closed
     // But the ones shared with other processes not. What does it means exactly?
-
-    //V(p->p_sem); // This semaphore is put high to be used by the waitpid() system call
+	//proc_remthread(curthread);
+    V(curproc->p_sem); // This semaphore is put high to be used by the waitpid() system call
 
     thread_exit();
 
@@ -330,10 +335,9 @@ int sys_waitpid( pid_t pid, userptr_t status, int option, pid_t *retval ) {
 	if ( option != 0 ) {
 		return EINVAL;
 	}
+	
 
-    p_status = p->p_pidinfo->exit_status;
-
-    proc_wait(p);
+    p_status = proc_wait(p);
 
     result = copyout((const void *) &p_status, status, sizeof(int));
     if (result) {
@@ -343,5 +347,4 @@ int sys_waitpid( pid_t pid, userptr_t status, int option, pid_t *retval ) {
     *retval = pid;
 
     return 0;
-
 }

@@ -102,7 +102,7 @@ void
 dowait(int nowait, int pid)
 {
 	int x;
-
+	
 	if (pid<0) {
 		/* fork in question failed; just return */
 		return;
@@ -179,12 +179,14 @@ test(int nowait)
 	if (depth != 4) {
 		warnx("depth %d, should be 4", depth);
 	}
-	check();
+	//putchar('+');
+	check();	//this makes each process to go out of phase completely, so each one reaches dowait with different timing.
 
 	/*
 	 * These must be called in reverse order to avoid waiting
 	 * improperly.
 	 */
+	
 	dowait(nowait, pid3);
 	dowait(nowait, pid2);
 	dowait(nowait, pid1);

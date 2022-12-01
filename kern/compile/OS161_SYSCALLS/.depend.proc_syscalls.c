@@ -13,4 +13,4 @@ proc_syscalls.o: ../../syscall/proc_syscalls.c ../../include/pid.h \
  ../../include/kern/errno.h ../../include/file.h \
  ../../include/../arch/mips/include/trapframe.h ../../include/vfs.h \
  ../../include/kern/fcntl.h ../../include/copyinout.h \
- ../../include/synch.h
+ ../../include/synch.h ../../include/vnode.h

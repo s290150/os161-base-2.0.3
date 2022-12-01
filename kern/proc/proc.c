@@ -50,6 +50,7 @@
 #include <vnode.h>
 #include <file.h>
 #include <pid.h>
+#include <synch.h>
 
 /*
  * The process for the kernel; this holds all the kernel-only threads.
@@ -79,13 +80,24 @@ proc_create(const char *name)
 		return NULL;
 	}
 
-
-	proc->p_pidinfo = pid_init(is_kproc);
-	if ( proc->p_pidinfo == NULL ) {
+	proc->p_sem = sem_create(name, 0);
+	if ( proc->p_sem == NULL ) {
+		kfree(proc->p_name);
 		kfree(proc);
 		return NULL;
 	}
 
+	proc->p_pidinfo = pid_init(is_kproc);
+	if ( proc->p_pidinfo == NULL ) {
+		kfree(proc->p_name);
+		sem_destroy(proc->p_sem);
+		kfree(proc);
+		return NULL;
+	}
+	
+	spinlock_acquire(&pt->pt_lock);
+	pt->proc_ptr[proc->p_pidinfo->current_pid] = proc;
+	spinlock_release(&pt->pt_lock);
 
 	proc->p_numthreads = 0;
 	spinlock_init(&proc->p_lock);
@@ -101,8 +113,6 @@ proc_create(const char *name)
 		proc->p_filetable = filetable_init();
 		//ft_STD_init();
 	}
-
-
 
 	return proc;
 }
@@ -188,6 +198,11 @@ proc_destroy(struct proc *proc)
 	}
 
 	KASSERT(proc->p_numthreads == 0);
+
+	filetable_destroy(proc->p_filetable);
+	processtable_remproc(proc->p_pidinfo->current_pid);
+	pid_destroy(proc->p_pidinfo);
+	sem_destroy(proc->p_sem);
 	spinlock_cleanup(&proc->p_lock);
 
 	kfree(proc->p_name);
@@ -200,15 +215,13 @@ proc_destroy(struct proc *proc)
 void
 proc_bootstrap(void)
 {
-	pt = proctable_init();
+	pt = proctable_init();	//this is executed only one time for the kernel
 	kproc = proc_create("[kernel]");
 	if (kproc == NULL) {
 		panic("proc_create for kproc failed\n");
 	}
 
-	spinlock_acquire(&pt->pt_lock);	//without & right?
-	pt->proc_ptr[kproc->p_pidinfo->current_pid] = kproc;
-	spinlock_release(&pt->pt_lock);
+	
 }
 
 /*

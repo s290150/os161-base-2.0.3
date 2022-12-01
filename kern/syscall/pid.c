@@ -32,7 +32,7 @@ struct pid *pid_init ( bool is_proc ) {
         p->parent_pid = 0;
         p->current_pid = 1;
     } else {
-        p->parent_pid = 0; //Inizialization of parent pid, that is associated in sys_fork()
+        p->parent_pid = 0; //In sys_fork() it is set to proper value
         newpid = get_newpid();
         p->current_pid = newpid;
     }
@@ -66,6 +66,12 @@ void processtable_placeproc(struct proc *p, pid_t pid) {
 
 }
 
+void processtable_remproc(pid_t pid){
+    spinlock_acquire(&pt->pt_lock);
+    pt->proc_ptr[pid] = NULL;
+    spinlock_release(&pt->pt_lock);
+}
+
 pid_t get_newpid (void) {
     spinlock_acquire(&pt->pt_lock);
 
@@ -84,27 +90,26 @@ pid_t get_newpid (void) {
 }
 
 struct proc * proc_search_pid ( pid_t pid ) {
-
-    return pt->proc_ptr[pid];
-
+    struct proc * process;
+    spinlock_acquire(&pt->pt_lock);
+    process = pt->proc_ptr[pid];
+    spinlock_release(&pt->pt_lock);
+    return process;
 }
 
-void proc_wait ( struct proc *process ) {
+int proc_wait ( struct proc *process ) {
+    int ret;
 
     P(process->p_sem);
-
-    pid_destroy(process->p_pidinfo);
-
-    // If I perform the proc_destroy, I destroy also all the struct allocated dinamically with it?
-    // (filetable and pid table)
-
+    ret = process->p_pidinfo->exit_status;  //no spinlock?
     proc_destroy(process);
-
+    return ret;
 }
 
 void pid_destroy( struct pid *pid ) {
-
+    spinlock_acquire(&pt->pt_lock);
+    pt->n_active_processes--;
     pt->proc_ptr[pid->current_pid] = NULL;
-
+    spinlock_release(&pt->pt_lock);
 }
 

@@ -75,6 +75,7 @@ int filetable_placefile(struct openfile *of, int *fd, struct filetable *ft);
 int findFD ( int fd, struct openfile** of );
 
 int closeOpenFile ( struct openfile *of );
+void filetable_destroy(struct filetable * ft);
 void filetable_copy(struct filetable * new_ft);
 
 
