@@ -102,19 +102,23 @@ void
 dowait(int nowait, int pid)
 {
 	int x;
-	
+	int val;
+
 	if (pid<0) {
 		/* fork in question failed; just return */
+		
 		return;
 	}
 	if (pid==0) {
 		/* in the fork in question we were the child; exit */
 		exit(0);
-		
+
 	}
 
 	if (!nowait) {
-		if (waitpid(pid, &x, 0)<0) {
+		val = waitpid(pid, &x, 0);
+		printf("%d\n", val);
+		if (val<0) {
 			warn("waitpid");
 		}
 		else if (WIFSIGNALED(x)) {
@@ -133,7 +137,7 @@ static
 void
 test(int nowait)
 {
-	int pid0, pid1, pid2, pid3;
+	int pid0;
 	int depth = 0;
 
 	/*
@@ -158,39 +162,11 @@ test(int nowait)
 	}
 	check();
 
-	pid1 = dofork();
-	depth++;
-	putchar('B');
-	if (depth != 2) {
-		warnx("depth %d, should be 2", depth);
-	}
-	check();
-
-	pid2 = dofork();
-	depth++;
-	putchar('C');
-	if (depth != 3) {
-		warnx("depth %d, should be 3", depth);
-	}
-	check();
-
-	pid3 = dofork();
-	depth++;
-	putchar('D');
-	if (depth != 4) {
-		warnx("depth %d, should be 4", depth);
-	}
-	//putchar('+');
-	check();	//this makes each process to go out of phase completely, so each one reaches dowait with different timing.
-
 	/*
 	 * These must be called in reverse order to avoid waiting
 	 * improperly.
 	 */
 	
-	dowait(nowait, pid3);
-	dowait(nowait, pid2);
-	dowait(nowait, pid1);
 	dowait(nowait, pid0);
 
 	putchar('\n');
@@ -200,7 +176,7 @@ int
 main(int argc, char *argv[])
 {
 	static const char expected[] =
-		"|----------------------------|\n";
+		"|--|\n";
 	int nowait=0;
 
 	if (argc==2 && !strcmp(argv[1], "-w")) {
