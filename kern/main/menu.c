@@ -139,7 +139,7 @@ common_prog(int nargs, char **args)
 	 * once you write the code for handling that.
 	 */
 	sys_waitpid(proc->p_pidinfo->current_pid, NULL, 0, NULL);
-
+	kprintf("\nShell exiting\n");
 	return 0;
 }
 

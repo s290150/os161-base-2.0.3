@@ -107,15 +107,18 @@ dowait(int nowait, int pid)
 	if (pid<0) {
 		/* fork in question failed; just return */
 		
+		printf("negative pid\n");
 		return;
 	}
 	if (pid==0) {
 		/* in the fork in question we were the child; exit */
 		exit(0);
-
+		printf("not exiting\n");
 	}
 	
 	if (!nowait) {
+		
+		printf("%d\n", pid);
 		val = waitpid(pid, &x, 0);
 		printf("%d\n", val);
 		if (val<0) {

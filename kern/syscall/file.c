@@ -208,6 +208,6 @@ void filetable_copy(struct filetable * new_ft){
 	/* for(int fd=0; fd<__OPEN_MAX; fd++){
 		if(curproc->p_filetable->op_ptr[fd] != NULL)
 			curproc->p_filetable->op_ptr[fd]->reference_count++;
-	} */	
+	}	 */
 	lock_release(curproc->p_filetable->ft_lock);
 }

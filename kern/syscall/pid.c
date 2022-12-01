@@ -7,6 +7,7 @@
 #include <kern/errno.h>
 #include <synch.h>
 #include <lib.h>
+#include <current.h>
 
 struct pid *pid_init ( bool is_proc ) {
 
@@ -99,8 +100,11 @@ struct proc * proc_search_pid ( pid_t pid ) {
 
 int proc_wait ( struct proc *process ) {
     int ret;
-
+    //kprintf("wait pid %d\n", curproc->p_pidinfo->current_pid);
     P(process->p_sem);
+    //kprintf("wait pid %d: %d\n", process->p_pidinfo->current_pid, (unsigned int)process->p_sem->sem_count);
+    
+    //kprintf("wait pid %d\n", curproc->p_pidinfo->current_pid);
     ret = process->p_pidinfo->exit_status;  //no spinlock?
     proc_destroy(process);
     return ret;

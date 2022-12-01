@@ -193,7 +193,7 @@ syscall(struct trapframe *tf)
 		tf->tf_v1 = retval1;
 		tf->tf_a3 = 0;      /* signal no error */
 	}
-
+	
 	/*
 	 * Now, advance the program counter, to avoid restarting
 	 * the syscall over and over again.

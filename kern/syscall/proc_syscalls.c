@@ -101,6 +101,7 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
     //memcpy(new_proc->p_addrspace, addr_new, sizeof(struct addrspace));	//as_copy at row 87 does the same job as this line maybe
 
     // Here we copy filetable and update the process table//
+
     filetable_copy(new_proc->p_filetable);
     processtable_placeproc(new_proc, new_proc->p_pidinfo->current_pid);
 
@@ -117,7 +118,9 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
         kfree(tf_new);
         proc_destroy(new_proc);
         return ret;
-    } 
+    }
+	
+	 
 
     // This is the return for the child
     return 0;
@@ -293,20 +296,22 @@ int sys_execv(userptr_t progname, userptr_t argv){
 }
 
 void sys__exit( int status ) {
-
-    //struct proc *p = curproc;
+    struct proc *p = curproc;
     curproc->p_pidinfo->exit_status = status;
     curproc->p_pidinfo->exit = true;
-	//kprintf("\n-\n");
-
-
+	
+	
+	//kprintf("\nchild %d\n", (int)pt->proc_ptr[p->p_pidinfo->current_pid]);
     // All the files opened by this process need to be closed
     // But the ones shared with other processes not. What does it means exactly?
-	//proc_remthread(curthread);
-    V(curproc->p_sem); // This semaphore is put high to be used by the waitpid() system call
-
-    thread_exit();
-
+	
+	//kprintf("exit pid %d\n", curproc->p_pidinfo->current_pid);
+	proc_remthread(curthread);
+    
+    V(p->p_sem); // This semaphore is put high to be used by the waitpid() system call
+	//kprintf("sem value: %d\n", (unsigned int)curproc->p_sem->sem_count);
+	
+	thread_exit();
 }
 
 int sys_getpid( pid_t *retval )
@@ -339,14 +344,17 @@ int sys_waitpid( pid_t pid, userptr_t status, int option, pid_t *retval ) {
 	}
 	
 
+	//kprintf("\nparent %d\n", (int)pt->proc_ptr[pid]);
     p_status = proc_wait(p);
-
+	
     result = copyout((const void *) &p_status, status, sizeof(int));
     if (result) {
         return result;
     }
 
+	
+	//here something breaks the filetable (discovered from miniforktest)
+	
     *retval = pid;
-	//kprintf("\n%d\n", (int)pid);
     return 0;
 }
