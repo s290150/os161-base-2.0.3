@@ -114,7 +114,7 @@ dowait(int nowait, int pid)
 		exit(0);
 
 	}
-
+	
 	if (!nowait) {
 		val = waitpid(pid, &x, 0);
 		printf("%d\n", val);

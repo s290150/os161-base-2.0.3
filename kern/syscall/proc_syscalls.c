@@ -347,6 +347,6 @@ int sys_waitpid( pid_t pid, userptr_t status, int option, pid_t *retval ) {
     }
 
     *retval = pid;
-	kprintf("\n%d\n", (int)pid);
+	//kprintf("\n%d\n", (int)pid);
     return 0;
 }
