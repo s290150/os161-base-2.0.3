@@ -189,6 +189,7 @@ spawn(int njobs)
 			semP(&s2, 1);
 			semclose(&s1);
 			semclose(&s2);
+			printf("%s - %s", subargv[0], subargv[1]);
 			execv(subargv[0], subargv);
 			warn("execv: %s", subargv[0]);
 			_exit(1);
@@ -201,6 +202,8 @@ spawn(int njobs)
 	semP(&s1, njobs);
 	printf("Starting the execs...\n");
 	semV(&s2, njobs);
+	
+	//printf("semV s2 lowered...\n");
 
 	failed = 0;
 	for (i=0; i<njobs; i++) {
@@ -237,7 +240,7 @@ main(int argc, char *argv[])
 {
 	static char default_prog[] = "/bin/pwd";
 
-	int njobs = 12;
+	int njobs = 2;
 	int i;
 
 	for (i=1; i<argc; i++) {

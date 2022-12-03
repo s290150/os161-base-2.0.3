@@ -197,51 +197,62 @@ loadexec(char *progname, vaddr_t *entrypoint, vaddr_t *stackptr)
 	return 0;
 }
 
-int sys_execv(userptr_t progname, userptr_t argv){
+int sys_execv(char * progname, char ** argv){
 
 	vaddr_t entrypoint, stackptr;
     char path[__PATH_MAX];
 	int argc;
     int result;
-	int i = 0;
-	int j = 0;
-	char **commands = kmalloc(100*sizeof(char));; //Initialization of this two variables (an error asked for it) is correct?
-	int *pointer = NULL;
+	char *commands[10];
+	//int *pointer;
 	size_t actual;
 	char **uargv;
 	unsigned int curaddr;
 	int length;
-    
-    result = copyinstr(progname, path, __PATH_MAX, NULL);    //copy the progname from userspace
+    argc = 0;
+	int i = 0;
+	int j = 0;
+
+	length = 100*sizeof(char);
+
+    result = copyinstr((const_userptr_t)progname, path, __PATH_MAX, NULL);    //copy the progname from userspace
+	//copyinstr copies only for the length of progname, __PATH_MAX is used only inside it to verify that the actual length doesn't exceed this value.
     if (result){
         return result;
     }
 
-	argc = 0;
+	//while ( *(char **)(argv+i) != NULL ) {
+	
+	do {
 
-	while ( *(char **)(argv+i) != NULL ) {
+		//a control for i to not exceed __ARG_MAX is needed here
 
-		//commands[j] = 
+		commands[i] = (char *)kmalloc(length);	//pointer to a heap space for a single command of 100 chars
+		if (commands[i] == NULL){
+        	return ENOMEM;
+    	}
+		//pointer = kmalloc(sizeof(int));
 
-		result = copyin(argv+i, pointer, sizeof(int)); //argv+i point to the address of the argv vector plus i (that increment of 4 every iteration) to point every time to 4 bytes forward
-		
+		/* result = copyin((userptr_t)(argv+i), pointer, sizeof(int)); //argv+i point to the address of the argv vector plus i (that increment of 4 every iteration) to point every time to 4 bytes forward
 		if (result) {
 			return EFAULT;
 		}
 
-		result = copyinstr((userptr_t)pointer, commands[j], 100*sizeof(char), &actual);
-
+		result = copyinstr((userptr_t)pointer, commands[j], , &actual);
+		if ( result ) {
+			return EFAULT;
+		} */
+		// the commented code seems optimized by the compiler, since there is a jump from row 215 to 232. Looking at the code, it seems that copyinstr can be done directly, without the pointer variable.
+		
+		result = copyinstr((userptr_t)argv[i], commands[i], (100*sizeof(char)), &actual);	//previously length was 100*sizeof(char), that didn't work correctly because there were no brackets!
 		if ( result ) {
 			return EFAULT;
 		}
 
-		i = i+4;
-
-		j = j+1;
-
+		i++;
+		//j = j+1;
 		argc = argc + 1;
-
-	}
+	} while(argv[i] != NULL);	//a do while is needed because userspace variables can't be written or tested directly, it seems.
 
 	commands[j+1] = NULL;
 
@@ -270,6 +281,7 @@ int sys_execv(userptr_t progname, userptr_t argv){
 		if ( result ) {
 			return result;
 		}
+		kfree(commands[j]);
 		memcpy(uargv[j], &curaddr, sizeof(unsigned int));
 		//uargv[j] = curaddr; //This line gave me an error, so I tought to use memcpy to copy it
 							  //But the second argument (curaddr) needs to be a pointer so I
