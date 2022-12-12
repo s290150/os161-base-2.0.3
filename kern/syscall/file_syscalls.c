@@ -68,9 +68,8 @@ int sys__getcwd( userptr_t buf, size_t len, int* retval ) {
     struct iovec iov;
     struct uio myuio;
     int ret;
-
     //Initialize a uio suitable for I/O from a kernel buffer.
-    uio_uinit( &iov, &myuio, buf, len, 0, UIO_READ );
+    uio_uinit( &iov, &myuio, (void *)buf, len, 0, UIO_READ );
 
     ret = vfs_getcwd( &myuio ); //It permits to get the current directory
 
@@ -93,7 +92,7 @@ int sys_chdir( userptr_t pathname ) {
     char path[__PATH_MAX+1];
     int ret;
 
-    ret = copyinstr(pathname, path, strlen(path), NULL);
+    ret = copyinstr(pathname, path, (strlen(path)+1), NULL);
     if ( ret ) {
         return ret;
     }

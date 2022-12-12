@@ -101,19 +101,20 @@ runprogram(char *progname, unsigned long argc, char **args)
 		return result;
 	}
 
-	argvptr  = (char **) kmalloc(sizeof(char **) * argc);
+	argvptr  = (char **) kmalloc(sizeof(char *) * (argc+1));	//+1 for the NULL pointer
 	if(argvptr == NULL)	
 		return ENOMEM;
-	argvptr[argc] = NULL;
+
+	
 	for(int i=0; i< (int) argc; i++){	
-			argvptr[i] =(char*)kmalloc(sizeof(char*));
+			/* argvptr[i] =(char*)kmalloc(sizeof(char*));
 			if(argvptr[i] == NULL)	
-				return ENOMEM;
+				return ENOMEM; */	//it seems useless since it's already done at row 104 in the matrix
 
 			len = strlen(args[i])+1;
 			stackptr = stackptr - len;	//with the following copyoutstr the address increases toward the end of the stack
 			if(stackptr & 0x3)
-				stackptr -= (stackptr & 0x3); //padding
+				stackptr -= (stackptr & 0x3); //masks all bits except the first 2 LSBs
 			
 			result = copyoutstr(args[i], (userptr_t) stackptr, len,NULL);
 			if(result){
@@ -122,14 +123,17 @@ runprogram(char *progname, unsigned long argc, char **args)
 			}	
 			argvptr[i] = (char *) stackptr;	
 		}
-		argvptr[argc] = 0;
-		stackoffset += sizeof(char *)*(argc+1);
-		stackptr = stackptr - stackoffset /*- ((stackptr-stackoffset)%8)*/;
-		result = copyout (argvptr, (userptr_t) stackptr, sizeof(char *)*(argc));
-		if(result){
-			kfree(argvptr);
-			return result;
-		}		
+
+	argvptr[argc] = NULL;
+	stackoffset += sizeof(char *)*(argc+1);
+	stackptr = stackptr - stackoffset /*- ((stackptr-stackoffset)%8)*/;
+	result = copyout (argvptr, (userptr_t) stackptr, sizeof(char *)*(argc+1));
+	if(result){
+		kfree(argvptr);
+		return result;
+	}
+			
+	kfree(argvptr);
 
 	/* Warp to user mode. */
 	enter_new_process(argc /*argc*/, (userptr_t) stackptr/*userspace addr of argv*/,

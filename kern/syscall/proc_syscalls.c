@@ -16,6 +16,7 @@
 #include <copyinout.h>
 #include <synch.h>
 #include <vnode.h>
+#include <kern/wait.h>
 
 void
 enter_forked_process(void *data1, unsigned long data2){
@@ -136,32 +137,22 @@ loadexec(char *progname, vaddr_t *entrypoint, vaddr_t *stackptr)
 	int result;
     char *newname;
 
-	
-
-    /* new name for thread */   
-    newname = kstrdup(progname);    //strcpy with a kmalloc to have the same dimension of the argument
-	if (newname == NULL) {
-		return ENOMEM;
-	}
-
     /* Open the file. */
 	result = vfs_open(progname, O_RDONLY, 0, &v);
 	if (result) {
-        kfree(newname);
 		return result;
 	}
 
 	/* Create a new address space. */
 	new_as = as_create();
 	if (new_as == NULL) {
-        kfree(newname);
 		vfs_close(v);
 		return ENOMEM;
 	}
 
 	/* Switch to it and activate it. */
 	old_as = proc_setas(new_as);    //sets the new as and returns the old one in case of errors
-	as_activate();
+	as_activate();	//it is a control on the new set new_as
 
 	/* Load the executable. */
 	result = load_elf(v, entrypoint);
@@ -170,7 +161,6 @@ loadexec(char *progname, vaddr_t *entrypoint, vaddr_t *stackptr)
         proc_setas(old_as); 
 		as_activate();
 		as_destroy(new_as);
-		kfree(newname);
         return result;
 	}
 
@@ -183,15 +173,19 @@ loadexec(char *progname, vaddr_t *entrypoint, vaddr_t *stackptr)
         proc_setas(old_as); 
 		as_activate();
 		as_destroy(new_as);
-        kfree(newname);
 		return result;
 	}
 
     if (old_as) {
 		as_destroy(old_as);
-	}
+	}	//maybe this is not needed
 
-    kfree(curthread->t_name);   //is it needed?
+	/* new name for thread */   
+    newname = kstrdup(progname);    //strcpy with a kmalloc to have the same dimension of the argument
+	if (newname == NULL) {
+		return ENOMEM;
+	}
+    kfree(curthread->t_name);
 	curthread->t_name = newname;
 
 	return 0;
@@ -206,14 +200,12 @@ int sys_execv(char * progname, char ** argv){
 	char *commands[10];
 	//int *pointer;
 	size_t actual;
-	char **uargv;
-	unsigned int curaddr;
-	int length;
+	char **argvptr;
+	//unsigned int curaddr;
+	int len;
     argc = 0;
 	int i = 0;
-	int j = 0;
-
-	length = 100*sizeof(char);
+	//int j = 0;
 
     result = copyinstr((const_userptr_t)progname, path, __PATH_MAX, NULL);    //copy the progname from userspace
 	//copyinstr copies only for the length of progname, __PATH_MAX is used only inside it to verify that the actual length doesn't exceed this value.
@@ -223,11 +215,11 @@ int sys_execv(char * progname, char ** argv){
 
 	//while ( *(char **)(argv+i) != NULL ) {
 	
-	do {
+	while(argv[i] != NULL) {
 
 		//a control for i to not exceed __ARG_MAX is needed here
 
-		commands[i] = (char *)kmalloc(length);	//pointer to a heap space for a single command of 100 chars
+		commands[i] = (char *)kmalloc(100*sizeof(char));	//pointer to a heap space for a single command of 100 chars
 		if (commands[i] == NULL){
         	return ENOMEM;
     	}
@@ -252,19 +244,16 @@ int sys_execv(char * progname, char ** argv){
 		i++;
 		//j = j+1;
 		argc = argc + 1;
-	} while(argv[i] != NULL);	//a do while is needed because userspace variables can't be written or tested directly, it seems.
+	}
 
-	commands[j+1] = NULL;
-
+	commands[i+1] = NULL;
 
 	result = loadexec(path, &entrypoint, &stackptr);
-
 	if ( result ) {
 		return result;
 	}
 
-	uargv = (char **) kmalloc(sizeof(char *) * (argc+1));
-
+	/* uargv = (char **) kmalloc(sizeof(char *) * (argc+1));	//+1 for the NULL?
 	if ( uargv == NULL )
 	{
 		kfree(commands);
@@ -282,7 +271,6 @@ int sys_execv(char * progname, char ** argv){
 			return result;
 		}
 		kfree(commands[j]);
-		memcpy(uargv[j], &curaddr, sizeof(unsigned int));
 		//uargv[j] = curaddr; //This line gave me an error, so I tought to use memcpy to copy it
 							  //But the second argument (curaddr) needs to be a pointer so I
 							  //Wrote it with the &. I don't know exactly if it is the correct
@@ -295,7 +283,42 @@ int sys_execv(char * progname, char ** argv){
 	result = copyout(uargv, (userptr_t) curaddr, sizeof(char *) * (j+1));
 	if ( result ) {
 		return result;
+	} */
+
+
+	argvptr  = (char **) kmalloc(sizeof(char *) * (argc+1));	//+1 for the NULL pointer
+	if(argvptr == NULL)	
+		return ENOMEM;
+
+	
+	for(int i=0; i< argc; i++){	
+			/* argvptr[i] =(char*)kmalloc(sizeof(char*));
+			if(argvptr[i] == NULL)	
+				return ENOMEM; */	//it seems useless since it's already done at row 104 in the matrix
+
+			len = strlen(commands[i])+1;
+			stackptr = stackptr - len;	//with the following copyoutstr the address increases toward the end of the stack
+			if(stackptr & 0x3)
+				stackptr -= (stackptr & 0x3); //masks all bits except the first 2 LSBs
+			
+			result = copyoutstr(commands[i], (userptr_t) stackptr, len,NULL);
+			if(result){
+				kfree(argvptr);
+				return result;
+			}	
+			argvptr[i] = (char *) stackptr;	
+		}
+
+	argvptr[argc] = NULL;
+	stackptr = stackptr - sizeof(char *)*(argc+1) /*- ((stackptr-stackoffset)%8)*/;
+	result = copyout (argvptr, (userptr_t) stackptr, sizeof(char *)*(argc+1));
+	if(result){
+		kfree(argvptr);
+		return result;
 	}
+			
+	kfree(argvptr);
+
 
 	/* Warp to user mode. */
 	enter_new_process(argc /*argc*/, (userptr_t)stackptr/*userspace addr of argv*/,
@@ -309,7 +332,7 @@ int sys_execv(char * progname, char ** argv){
 
 void sys__exit( int status ) {
     struct proc *p = curproc;
-    curproc->p_pidinfo->exit_status = status;
+    curproc->p_pidinfo->exit_status = _MKWAIT_EXIT(status);
     curproc->p_pidinfo->exit = true;
 	
 	
@@ -322,7 +345,6 @@ void sys__exit( int status ) {
     
     V(p->p_sem); // This semaphore is put high to be used by the waitpid() system call
 	//kprintf("sem value: %d\n", (unsigned int)curproc->p_sem->sem_count);
-	
 	thread_exit();
 }
 
