@@ -92,14 +92,10 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
     }
 
     memcpy(tf_new, tf, sizeof(struct trapframe));
-	tf_new->tf_v0 = 0;	//retval?
-	tf_new->tf_v1 = 0;	//retval1?		   
+	tf_new->tf_v0 = 0;	//retval
+	tf_new->tf_v1 = 0;	//retval1		   
 	tf_new->tf_a3 = 0;	//signal no error
 	tf_new->tf_epc += 4;	//advances the program counter to avoid restarting the syscall over and over again.
-
-    
-
-    //memcpy(new_proc->p_addrspace, addr_new, sizeof(struct addrspace));	//as_copy at row 87 does the same job as this line maybe
 
     // Here we copy filetable and update the process table//
 
@@ -121,8 +117,6 @@ int sys_fork( struct trapframe *tf, pid_t* retval ) {
         return ret;
     }
 	
-	 
-
     // This is the return for the child
     return 0;
 
@@ -212,8 +206,6 @@ int sys_execv(char * progname, char ** argv){
     if (result){
         return result;
     }
-
-	//while ( *(char **)(argv+i) != NULL ) {
 	
 	while(argv[i] != NULL) {
 
@@ -223,20 +215,8 @@ int sys_execv(char * progname, char ** argv){
 		if (commands[i] == NULL){
         	return ENOMEM;
     	}
-		//pointer = kmalloc(sizeof(int));
-
-		/* result = copyin((userptr_t)(argv+i), pointer, sizeof(int)); //argv+i point to the address of the argv vector plus i (that increment of 4 every iteration) to point every time to 4 bytes forward
-		if (result) {
-			return EFAULT;
-		}
-
-		result = copyinstr((userptr_t)pointer, commands[j], , &actual);
-		if ( result ) {
-			return EFAULT;
-		} */
-		// the commented code seems optimized by the compiler, since there is a jump from row 215 to 232. Looking at the code, it seems that copyinstr can be done directly, without the pointer variable.
 		
-		result = copyinstr((userptr_t)argv[i], commands[i], (100*sizeof(char)), &actual);	//previously length was 100*sizeof(char), that didn't work correctly because there were no brackets!
+		result = copyinstr((userptr_t)argv[i], commands[i], (100*sizeof(char)), &actual);
 		if ( result ) {
 			return EFAULT;
 		}
@@ -253,48 +233,12 @@ int sys_execv(char * progname, char ** argv){
 		return result;
 	}
 
-	/* uargv = (char **) kmalloc(sizeof(char *) * (argc+1));	//+1 for the NULL?
-	if ( uargv == NULL )
-	{
-		kfree(commands);
-		return ENOMEM;
-	}
-
-	curaddr = stackptr;
-
-	for (j=0; j<i; j++)
-	{
-		length = strlen(commands[j])+1;
-		curaddr -= length;
-		result = copyout(commands[j], (userptr_t) curaddr, length);
-		if ( result ) {
-			return result;
-		}
-		kfree(commands[j]);
-		//uargv[j] = curaddr; //This line gave me an error, so I tought to use memcpy to copy it
-							  //But the second argument (curaddr) needs to be a pointer so I
-							  //Wrote it with the &. I don't know exactly if it is the correct
-							  //reference.
-	}
-
-	uargv[j] = NULL;
-	curaddr -= sizeof(char *) * (j+1);
-
-	result = copyout(uargv, (userptr_t) curaddr, sizeof(char *) * (j+1));
-	if ( result ) {
-		return result;
-	} */
-
-
 	argvptr  = (char **) kmalloc(sizeof(char *) * (argc+1));	//+1 for the NULL pointer
 	if(argvptr == NULL)	
 		return ENOMEM;
 
 	
 	for(int i=0; i< argc; i++){	
-			/* argvptr[i] =(char*)kmalloc(sizeof(char*));
-			if(argvptr[i] == NULL)	
-				return ENOMEM; */	//it seems useless since it's already done at row 104 in the matrix
 
 			len = strlen(commands[i])+1;
 			stackptr = stackptr - len;	//with the following copyoutstr the address increases toward the end of the stack
@@ -310,7 +254,7 @@ int sys_execv(char * progname, char ** argv){
 		}
 
 	argvptr[argc] = NULL;
-	stackptr = stackptr - sizeof(char *)*(argc+1) /*- ((stackptr-stackoffset)%8)*/;
+	stackptr = stackptr - sizeof(char *)*(argc+1) ;																					/*- ((stackptr-stackoffset)%8)*/
 	result = copyout (argvptr, (userptr_t) stackptr, sizeof(char *)*(argc+1));
 	if(result){
 		kfree(argvptr);
@@ -335,12 +279,6 @@ void sys__exit( int status ) {
     curproc->p_pidinfo->exit_status = _MKWAIT_EXIT(status);
     curproc->p_pidinfo->exit = true;
 	
-	
-	//kprintf("\nchild %d\n", (int)pt->proc_ptr[p->p_pidinfo->current_pid]);
-    // All the files opened by this process need to be closed
-    // But the ones shared with other processes not. What does it means exactly?
-	
-	//kprintf("exit pid %d\n", curproc->p_pidinfo->current_pid);
 	proc_remthread(curthread);
     
     V(p->p_sem); // This semaphore is put high to be used by the waitpid() system call
@@ -350,11 +288,9 @@ void sys__exit( int status ) {
 
 int sys_getpid( pid_t *retval )
 {
-
     *retval = curproc->p_pidinfo->current_pid;
 
     return 0;
-
 }
 
 int sys_waitpid( pid_t pid, userptr_t status, int option, pid_t *retval ) {
@@ -362,23 +298,25 @@ int sys_waitpid( pid_t pid, userptr_t status, int option, pid_t *retval ) {
     // We need to recover the proc structure using the pid associated to the process that
     // we are waiting. So we need a processtable that take into account all the processes
     // (basically the same we did for filetable)
-
+	if (pid <= 0 || pid > __PID_MAX){
+		return ECHILD;
+	}
     struct proc *p = proc_search_pid(pid);
     int p_status;
 	int result;
-
-	
 
     if ( p == NULL ) {
         return ENOMEM;
     }
 
+	//if (status == NULL){
+	//	return EINVAL;
+	//}
+
 	if ( option != 0 ) {
 		return EINVAL;
 	}
 	
-
-	//kprintf("\nparent %d\n", (int)pt->proc_ptr[pid]);
     p_status = proc_wait(p);
 	
     result = copyout((const void *) &p_status, status, sizeof(int));

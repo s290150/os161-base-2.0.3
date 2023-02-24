@@ -158,7 +158,7 @@ int findFD ( int fd, struct openfile **of ) {
 
     struct filetable *ft = curproc->p_filetable; //probably curproc
 
-    if ( fd < 0 || fd > __OPEN_MAX ) { //Control if the file descriptor fd is into a valid range
+    if ( fd < 0 || fd >= __OPEN_MAX ) { //Control if the file descriptor fd is into a valid range
         return EBADF; //Bad file descriptor
     }
 	/* if (ft->op_ptr[fd] == NULL)

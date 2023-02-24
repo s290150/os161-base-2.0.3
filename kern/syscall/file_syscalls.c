@@ -17,17 +17,12 @@
 int sys_open(userptr_t filename, int flags, int mode, int* retval)
 {
     char path[__PATH_MAX]; //the path name has a max length given in kern/limits.h
-    //size_t * path_len;
     int ret;
 
-    
-    //path_len = kmalloc(sizeof(int));
-    //modified below, path_len was null before
     ret = copyinstr(filename, path, __PATH_MAX, NULL); //The last is referred to the actual lenght of the string, if we have it. If not, we can put NULL here
     if ( ret ) {
         return ret; //ENAMETOOLONG should be the return value from copyinstr
     }
-    
     
     ret = file_open(path, flags, mode, retval, curproc->p_filetable);
     if ( ret ) {
@@ -35,7 +30,6 @@ int sys_open(userptr_t filename, int flags, int mode, int* retval)
     }
 
     return 0;
-
 }
 
 int sys_close( int fd ) {
@@ -60,7 +54,6 @@ int sys_close( int fd ) {
     curproc->p_filetable->op_ptr[fd] = NULL; //At the end, the structure is deleted by the array
 
     return 0;
-
 }
 
 int sys__getcwd( userptr_t buf, size_t len, int* retval ) {
@@ -71,7 +64,8 @@ int sys__getcwd( userptr_t buf, size_t len, int* retval ) {
     //Initialize a uio suitable for I/O from a kernel buffer.
     uio_uinit( &iov, &myuio, (void *)buf, len, 0, UIO_READ );
 
-    ret = vfs_getcwd( &myuio ); //It permits to get the current directory
+    ret = vfs_getcwd( &myuio ); //It allows to get the current directory
+    kprintf("pwd: %s\n", (char *)buf);
 
     if ( ret ) {
         return ret;
@@ -84,7 +78,6 @@ int sys__getcwd( userptr_t buf, size_t len, int* retval ) {
     *retval = len - myuio.uio_resid;
 
     return 0;
-
 }
 
 int sys_chdir( userptr_t pathname ) {
@@ -92,7 +85,7 @@ int sys_chdir( userptr_t pathname ) {
     char path[__PATH_MAX+1];
     int ret;
 
-    ret = copyinstr(pathname, path, (strlen(path)+1), NULL);
+    ret = copyinstr(pathname, path, (__PATH_MAX+1), NULL);
     if ( ret ) {
         return ret;
     }
@@ -103,7 +96,6 @@ int sys_chdir( userptr_t pathname ) {
     }
 
     return 0;
-
 }
 
 int sys_dup2( int oldfd, int newfd, int *outfd ) {
@@ -116,24 +108,30 @@ int sys_dup2( int oldfd, int newfd, int *outfd ) {
     if ( ret ) {
         return ret;
     }
+    if (of == NULL){
+        return EBADF;
+    }
 
     ret = findFD( newfd, &temp_of);
     if ( ret ) {
         return ret;
+    }
+    if (temp_of == NULL){
+        return EBADF;
     }
     
     //If the file descriptors are the same, the dup2 finishes without errors
     if ( oldfd == newfd ) {
         return 0;
     }
-
+    
     if ( temp_of != NULL ) {
-
+        
         ret = closeOpenFile(temp_of);
+        kprintf("Try this boi\n");
         if ( ret ) {
             return ret;
         }
-        
         ft->op_ptr[newfd] = NULL; //At the end, the structure is deleted by the array
     }
 
@@ -146,10 +144,8 @@ int sys_dup2( int oldfd, int newfd, int *outfd ) {
                             //of the structure pointed by the old fd. So, the refcount need to be incremented
                             //because we have two file descriptors that are referring to the same file.
 
-    
     *outfd = newfd;
     return 0;
-
 }
 
 int sys_lseek( int fd, off_t offset, int whence, int *retval, int *retval1) {
@@ -175,7 +171,6 @@ int sys_lseek( int fd, off_t offset, int whence, int *retval, int *retval1) {
 
     switch( whence ) {
         case SEEK_SET: //Set the offset sent by the user
-            //kprintf("%d\n", (int)offset);
             seek = offset;
             break;
         case SEEK_CUR: //Set the offset as the current position plus offset variable
@@ -206,7 +201,6 @@ int sys_lseek( int fd, off_t offset, int whence, int *retval, int *retval1) {
     *retval1 = seek & 0xFFFFFFFF;
 
     return 0;
-
 }
 
 int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
@@ -227,6 +221,10 @@ int sys_read( int fd, userptr_t buf, size_t size, int *retval ) {
     }
 
     lock_acquire(of->lock);
+
+    if (of->mode == O_WRONLY){
+        return EBADF;
+    }
 
     //Initialize a uio suitable for I/O from a kernel buffer.
 
@@ -276,6 +274,10 @@ int sys_write( int fd, userptr_t buf, size_t size, int *retval ) {
         return EBADF;
     }
     lock_acquire(of->lock);
+    
+    if (of->mode == O_RDONLY){
+        return EBADF;
+    }
 
     //Initialize a uio suitable for I/O from a kernel buffer.
 
@@ -300,5 +302,4 @@ int sys_write( int fd, userptr_t buf, size_t size, int *retval ) {
     *retval = size - myuio.uio_resid;;
 
     return 0;
-
 }

@@ -156,6 +156,7 @@ semV(struct usem *sem, size_t num)
 
 #define SUBARGC_MAX 64
 static char *subargv[SUBARGC_MAX];
+static char *subnewargv[SUBARGC_MAX];
 static int subargc = 0;
 
 static
@@ -189,14 +190,15 @@ spawn(int njobs)
 			semP(&s2, 1);
 			semclose(&s1);
 			semclose(&s2);
-			if (i = 0){
+			//printf("HELL OH there\n");
+			if(i == 0){
 				execv(subargv[0], subargv);
 				warn("execv: %s", subargv[0]);
 				_exit(1);
 			}
 			else{
-				execv(subargv[1], subargv);
-				warn("execv: %s", subargv[1]);
+				execv(subnewargv[0], subnewargv);
+				warn("execv: %s", subnewargv[0]);
 				_exit(1);
 			}
 		}
@@ -244,9 +246,10 @@ spawn(int njobs)
 int
 main(int argc, char *argv[])
 {
-	static char * default_prog[] = {"/testbin/palin", "cat prova.txt"};
+	static char default_prog[] = "/testbin/forktest";
+	static char second_prog[] = "/testbin/palin"; 
 
-	int njobs = 1;
+	int njobs = 2;
 	int i;
 
 	for (i=1; i<argc; i++) {
@@ -272,8 +275,11 @@ main(int argc, char *argv[])
 
 	if (subargc == 0) {
 		subargv[subargc++] = default_prog;
+		subnewargv[0] = second_prog;
+
 	}
 	subargv[subargc] = NULL;
+	subnewargv[1] = NULL;
 
 	spawn(njobs);
 

@@ -158,7 +158,7 @@ vnode_check(struct vnode *v, const char *opstr)
 	if (v->vn_fs == (void *)0xdeadbeef) {
 		panic("vnode_check: vop_%s: deadbeef fs pointer\n", opstr);
 	}
-
+	
 	spinlock_acquire(&v->vn_countlock);
 
 	if (v->vn_refcount < 0) {
