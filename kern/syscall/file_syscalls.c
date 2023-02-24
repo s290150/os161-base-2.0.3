@@ -108,17 +108,17 @@ int sys_dup2( int oldfd, int newfd, int *outfd ) {
     if ( ret ) {
         return ret;
     }
-    if (of == NULL){
-        return EBADF;
-    }
+    //if (of == NULL){
+    //    return EBADF;
+    //}
 
     ret = findFD( newfd, &temp_of);
     if ( ret ) {
         return ret;
     }
-    if (temp_of == NULL){
-        return EBADF;
-    }
+    //if (temp_of == NULL){
+    //    return EBADF;
+    //}
     
     //If the file descriptors are the same, the dup2 finishes without errors
     if ( oldfd == newfd ) {
